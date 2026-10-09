@@ -179,12 +179,14 @@ export function playLines(lines) {
   return new Promise(done => {
     const ov = $('#ov'); ov.hidden = false;
     ov.innerHTML = `<div class="opening" id="op"><p id="opl"></p></div>`;
-    let i = 0, t = null;
+    let i = 0, t = null, t2 = null, ended = false;
     const p = $('#opl', ov);
     const next = () => {
-      clearTimeout(t);
-      if (i >= lines.length) { ov.hidden = true; ov.innerHTML = ''; done(); return; }
-      p.classList.remove('on'); setTimeout(() => { p.textContent = lines[i++]; p.classList.add('on'); t = setTimeout(next, 3200); }, 350);
+      if (ended) return;
+      clearTimeout(t); clearTimeout(t2);
+      if (i >= lines.length) { ended = true; ov.hidden = true; ov.innerHTML = ''; done(); return; }
+      p.classList.remove('on');
+      t2 = setTimeout(() => { if (ended) return; p.textContent = lines[i++]; p.classList.add('on'); t = setTimeout(next, 3200); }, 350);
     };
     $('#op', ov).onclick = next; next();
   });

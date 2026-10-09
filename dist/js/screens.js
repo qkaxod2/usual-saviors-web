@@ -21,7 +21,10 @@ export function go(name, arg) {
 }
 const refresh = () => go(current, currentArg);
 
-const resBar = () => `<div class="res"><span>💎 <b>${fmt(S.gems)}</b></span><span>🪙 <b>${fmt(S.gold)}</b></span></div>`;
+const ICON_NAME = { gems: '신앙 토큰 아이콘', gold: '크레딧 아이콘', exp: '업무 일지 아이콘', wmat: '에테르 합금 아이콘', core: '존재 증명핵 아이콘' };
+const ICON_EMO = { gems: '💎', gold: '🪙', exp: '📒', wmat: '⚙️', core: '💠' };
+const ic = k => { const u = libImg('icon', ICON_NAME[k]); return u ? `<img class="ic" src="${u}" alt="">` : ICON_EMO[k]; };
+const resBar = () => `<div class="res"><span>${ic('gems')} <b>${fmt(S.gems)}</b></span><span>${ic('gold')} <b>${fmt(S.gold)}</b></span></div>`;
 const header = (title, back = 'lobby') => `<div class="top"><button class="back" data-go="${back}">‹</button><h1>${esc(title)}</h1>${resBar()}</div>`;
 function bind(handlers) {
   scr().onclick = e => {
@@ -34,7 +37,7 @@ function bind(handlers) {
 const ph = (c, cls = '') => `<div class="ph ${cls}" style="width:100%;height:100%">${esc(c?.name?.[0] || '?')}</div>`;
 const thumb = c => upper(c) ? `<img src="${upper(c)}" alt="${esc(c.name)}" loading="lazy">` : ph(c);
 const elTag = e => `<span class="el el-${esc(e)}">${esc(e)}</span>`;
-const matLine = () => `<div class="res" style="flex-wrap:wrap;margin:4px 0"><span>📒 ${T('expMat')} <b>${S.mat.exp}</b></span><span>⚙️ ${T('wMat')} <b>${S.mat.wmat}</b></span><span>💠 ${T('core')} <b>${S.mat.core}</b></span></div>`;
+const matLine = () => `<div class="res" style="flex-wrap:wrap;margin:4px 0"><span>${ic('exp')} ${T('expMat')} <b>${S.mat.exp}</b></span><span>${ic('wmat')} ${T('wMat')} <b>${S.mat.wmat}</b></span><span>${ic('core')} ${T('core')} <b>${S.mat.core}</b></span></div>`;
 
 const SCREENS = {
   // ============ 타이틀 ============
@@ -120,8 +123,8 @@ const SCREENS = {
       <div class="card"><div class="row"><span class="grow muted">SSR ${R.ssr}% · SR ${R.sr}% · ${R.pity}회 안에 SSR 확정</span><b>${pity}/${R.pity}</b></div>
         <div class="bar" style="margin-top:6px"><i style="width:${pity / R.pity * 100}%"></i></div>
         ${S.firstTen ? '<div class="muted" style="margin-top:6px;color:var(--gold)">첫 10회 계약은 SSR 1명 확정!</div>' : ''}</div>
-      <div class="row" style="gap:10px"><button class="btn sub grow" data-act="p" data-v="1">1회 계약<br><small>💎 ${COST1}</small></button>
-        <button class="btn grow" data-act="p" data-v="10">10회 계약<br><small>💎 ${COST10}</small></button></div>
+      <div class="row" style="gap:10px"><button class="btn sub grow" data-act="p" data-v="1">1회 계약<br><small>${ic('gems')} ${COST1}</small></button>
+        <button class="btn grow" data-act="p" data-v="10">10회 계약<br><small>${ic('gems')} ${COST10}</small></button></div>
       <div class="card"><b style="font-size:14px">등장 ${esc(T('crew'))}</b><div class="grid" style="margin-top:8px">${poolOf(b).sort((x, y) => y.rarity - x.rarity).map(c => `<button class="cc ${S.owned[c.id] ? '' : 'off'}" data-go="char:${c.id}">${thumb(c)}<span class="cr r${c.rarity}">${rarName(c.rarity)}</span><span class="cn">${esc(c.name)}</span></button>`).join('')}</div></div>
       <button class="btn sub" style="width:100%" data-act="hist">영입 기록</button></div>`;
     bind({
@@ -160,13 +163,13 @@ const SCREENS = {
       grow: () => {
         if (!o) return '<p class="muted">아직 계약하지 않은 사원이에요.</p>';
         const lc = lvCost(o), mc = limitCost(o), wc = wCost(o), cap = capLv(o);
-        return matLine() + `<div class="card"><div class="row"><b class="grow">레벨 ${o.lv} / ${cap}</b><span class="muted">${esc(T('expMat'))} ${lc.exp} · 🪙${fmt(lc.gold)}</span></div>
+        return matLine() + `<div class="card"><div class="row"><b class="grow">레벨 ${o.lv} / ${cap}</b><span class="muted">${esc(T('expMat'))} ${lc.exp} · ${ic('gold')}${fmt(lc.gold)}</span></div>
           <div class="row" style="margin-top:8px"><button class="btn grow sm" data-act="lv" ${o.lv >= cap ? 'disabled' : ''}>${esc(T('enhance'))} +1</button><button class="btn sub sm" data-act="lvmax" ${o.lv >= cap ? 'disabled' : ''}>가능한 만큼</button></div>
           ${o.lv >= cap && o.limit < MAX_LIMIT ? '<p class="muted" style="margin:6px 0 0">레벨 상한이에요. 직급승진으로 상한을 올려요.</p>' : ''}</div>
-          <div class="card"><div class="row"><b class="grow">${esc(T('limit'))} ${'★'.repeat(o.limit)}${'☆'.repeat(MAX_LIMIT - o.limit)}</b><span class="muted">${esc(T('core'))} ${mc.core} · 🪙${fmt(mc.gold)}</span></div>
+          <div class="card"><div class="row"><b class="grow">${esc(T('limit'))} ${'★'.repeat(o.limit)}${'☆'.repeat(MAX_LIMIT - o.limit)}</b><span class="muted">${esc(T('core'))} ${mc.core} · ${ic('gold')}${fmt(mc.gold)}</span></div>
           <p class="muted" style="margin:6px 0">상한 +10, 능력치 +8%. 첫 승진 때 승진 CG가 열려요.</p>
           <button class="btn sm" style="width:100%" data-act="limit" ${o.limit >= MAX_LIMIT || o.lv < cap ? 'disabled' : ''}>${o.limit >= MAX_LIMIT ? '최대 직급' : esc(T('limit'))}</button></div>
-          <div class="card"><div class="row"><b class="grow">${esc(T('weapon'))} +${o.wlv}</b><span class="muted">${esc(T('wMat'))} ${wc.wmat} · 🪙${fmt(wc.gold)}</span></div>
+          <div class="card"><div class="row"><b class="grow">${esc(T('weapon'))} +${o.wlv}</b><span class="muted">${esc(T('wMat'))} ${wc.wmat} · ${ic('gold')}${fmt(wc.gold)}</span></div>
           <p class="muted" style="margin:6px 0">강화마다 공격 +4%.</p><button class="btn sm" style="width:100%" data-act="w" ${o.wlv >= MAX_WLV ? 'disabled' : ''}>${o.wlv >= MAX_WLV ? '최대 강화' : '강화'}</button></div>
           <div class="card"><div class="row"><b class="grow">호감도 ${o.aff} / ${MAX_AFF}</b><span class="muted">잠재 ${o.dup}/${MAX_DUP}</span></div><div class="bar" style="margin-top:6px"><i style="width:${o.aff >= MAX_AFF ? 100 : o.affExp}%;background:var(--warn)"></i></div>
           <p class="muted" style="margin:6px 0 0">로비 대화, 전투, 메신저, 파견으로 올라요.</p></div>`;
@@ -228,10 +231,10 @@ const SCREENS = {
       <div class="card"><div class="row"><b class="grow">편성 · 전투력 ${fmt(tp)}</b><button class="btn sub sm" data-act="edit">편성 변경</button></div>
         <div class="squad-pick">${[0, 1, 2, 3].map(i => sq[i] ? `<div class="cc">${thumb(sq[i])}<span class="ce">${elTag(sq[i].elem)}</span><span class="cn">${esc(sq[i].name)}</span></div>` : '<div class="empty" data-act="edit">+</div>').join('')}</div></div>
       <div class="tabs"><button class="${tab === 'story' ? 'on' : ''}" data-go="ops:story">메인 스토리</button><button class="${tab === 'farm' ? 'on' : ''}" data-go="ops:farm">${esc(T('farm'))}</button></div>
-      ${tab === 'story' ? (G.chapters || []).map(ch => `<h3 style="margin:14px 0 4px;font-size:15px">${esc(ch.title)}</h3>${ch.stages.map(s => {
+      ${tab === 'story' ? (G.chapters || []).map(ch => `<h3 style="margin:14px 0 4px;font-size:15px">${esc(ch.title)}</h3>${chMap(ch)}${ch.stages.map(s => {
         const op = stageOpen(s.id), dn = !!S.cleared[s.id];
-        return `<button class="stage ${dn ? 'done' : ''} ${op ? '' : 'lockd'}" data-act="stage" data-v="${s.id}"><span class="no">${esc(s.title.split(/[.\s]/)[0])}</span><span class="grow">${esc(s.title.replace(/^[\d-]+\.\s*/, ''))}<br><span class="muted">${s.enemies.map(e => `${e.name}${e.boss ? ' 👑' : ''}`).join(', ')}</span></span>${dn ? '' : `<span class="rw">💎${s.reward}</span>`}</button>`;
-      }).join('')}`).join('') : farms.map(f => { const left = 3 - (S.farm.n[f.key] || 0); return `<button class="stage ${left > 0 ? '' : 'lockd'}" data-act="farm" data-v="${f.key}"><span class="no">${{ exp: '📒', gold: '🪙', wmat: '⚙️', core: '💠' }[f.key] || '⚔️'}</span><span class="grow">${esc(f.name)}<br><span class="muted">${esc(rewardText(farmReward(f.key)))}</span></span><span class="muted">오늘 ${left}/3</span></button>`; }).join('')}
+        return `<button class="stage ${dn ? 'done' : ''} ${op ? '' : 'lockd'}" data-act="stage" data-v="${s.id}"><span class="no">${esc(s.title.split(/[.\s]/)[0])}</span><span class="grow">${esc(s.title.replace(/^[\d-]+\.\s*/, ''))}<br><span class="muted">${s.enemies.map(e => `${e.name}${e.boss ? ' 👑' : ''}`).join(', ')}</span></span>${dn ? '' : `<span class="rw">${ic('gems')}${s.reward}</span>`}</button>`;
+      }).join('')}`).join('') : farms.map(f => { const left = 3 - (S.farm.n[f.key] || 0); return `<button class="stage ${left > 0 ? '' : 'lockd'}" data-act="farm" data-v="${f.key}"><span class="no">${ICON_EMO[f.key] ? ic(f.key) : '⚔️'}</span><span class="grow">${esc(f.name)}<br><span class="muted">${esc(rewardText(farmReward(f.key)))}</span></span><span class="muted">오늘 ${left}/3</span></button>`; }).join('')}
     </div>`;
     bind({
       edit: () => squadEdit().then(refresh),
@@ -242,7 +245,7 @@ const SCREENS = {
         const first = !S.cleared[s.id];
         const r = await modal(`<h3>${esc(s.title)}</h3><p class="muted">${esc(ch.title)}</p>
           ${s.enemies.map(e => `<div class="sw"><span>${elTag(e.elem)} ${esc(e.name)}${e.boss ? ' 👑' : ''}</span><span class="muted">HP ${fmt(e.hp)} · 공격 ${e.atk}</span></div>`).join('')}
-          <p style="margin:10px 0 0">${first ? `첫 클리어 보상: 💎 ${s.reward}` : `반복 보상: ${esc(rewardText(repeatReward(s)))}`}</p>`,
+          <p style="margin:10px 0 0">${first ? `첫 클리어 보상: ${ic('gems')} ${s.reward}` : `반복 보상: ${esc(rewardText(repeatReward(s)))}`}</p>`,
           [{ label: '취소', cls: 'sub', value: 0 }, ...(first ? [] : [{ label: '스토리 다시 보기', cls: 'sub', value: 2 }]), { label: '출격', value: 1 }]);
         if (!r) return;
         if (r === 2) { await playStory(s.title, s.pre); await playStory(s.title, s.post); refresh(); return; }
@@ -353,7 +356,7 @@ const SCREENS = {
   missions() {
     const lv = Math.floor(S.pass.xp / PASS_STEP);
     scr().innerHTML = header('임무') + `<div class="body"><h3 style="font-size:15px;margin:8px 0">일일 임무</h3>
-      ${MISSIONS.map(m => { const n = S.daily.cnt[m.k] || 0, done = n >= m.n, got = S.daily.got[m.k]; return `<div class="li"><div class="grow"><div class="t">${esc(m.t)}</div><div class="d">${Math.min(n, m.n)}/${m.n} · 💎${m.gems} · 패스 +${PASS_STEP / 2}</div></div>${got ? '<span class="muted">완료</span>' : `<button class="btn sm" data-act="m" data-v="${m.k}" ${done ? '' : 'disabled'}>받기</button>`}</div>`; }).join('')}
+      ${MISSIONS.map(m => { const n = S.daily.cnt[m.k] || 0, done = n >= m.n, got = S.daily.got[m.k]; return `<div class="li"><div class="grow"><div class="t">${esc(m.t)}</div><div class="d">${Math.min(n, m.n)}/${m.n} · ${ic('gems')}${m.gems} · 패스 +${PASS_STEP / 2}</div></div>${got ? '<span class="muted">완료</span>' : `<button class="btn sm" data-act="m" data-v="${m.k}" ${done ? '' : 'disabled'}>받기</button>`}</div>`; }).join('')}
       <h3 style="font-size:15px;margin:16px 0 6px">${esc(T('pass'))} <span class="muted">Lv.${lv} · ${S.pass.xp % PASS_STEP}/${PASS_STEP}</span></h3>
       <div class="bar"><i style="width:${S.pass.xp % PASS_STEP}%"></i></div>
       <div class="pass" style="margin-top:10px">${PASS.map(p => { const ok = lv >= p.lv, got = S.pass.got.includes(p.lv); return `<button class="${ok ? 'ok' : ''} ${got ? 'got' : ''}" data-act="p" data-v="${p.lv}">${p.lv}<br>${esc(rewardText(p.r).split(' · ')[0])}</button>`; }).join('')}</div>
@@ -413,6 +416,7 @@ const SCREENS = {
   },
 };
 let TICK = null;
+function chMap(ch) { const key = String(ch.title || '').split(':')[0].trim(); const m = (G.lib || []).find(l => l.kind === 'map' && key && l.name.startsWith(key) && img(l.id)); return m ? `<img src="${img(m.id)}" alt="" style="width:100%;height:150px;object-fit:cover;border-radius:12px;margin:4px 0 6px;border:1px solid var(--line)">` : ''; }
 const CHTAB = {};
 export let DATA_SRC = 'file';
 export function setDataSrc(s) { DATA_SRC = s; }
