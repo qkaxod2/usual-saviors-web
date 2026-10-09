@@ -95,12 +95,16 @@ const SCREENS = {
         if (!c) return;
         const o = S.owned[c.id];
         if (part === 'chest') {
-          // 특수 터치: 연속으로 누르면 대사가 1→2→3단계로 넘어가요 (20초 지나면 처음부터). 연출은 놀라는 흔들림만.
-          const now = Date.now(), st = (window.__chestT ||= {}), r = st[c.id] && now - st[c.id].t < 20000 ? st[c.id] : { n: 0 };
-          r.n++; r.t = now; st[c.id] = r;
-          const tiers = c.touch.chest, tier = Math.min(r.n, tiers.length) - 1;
+          // 특수 터치: 누를 때마다 대사가 순서대로 나오고 1→2→3단계로 넘어가요 (30초 동안 안 누르면 처음부터). 연출은 놀라는 흔들림만.
+          const now = Date.now(), st = (window.__chestT ||= {}), r = st[c.id] && now - st[c.id].t < 30000 ? st[c.id] : { n: 0, t: 0 };
+          if (now - r.t < 1200) return;   // 연타 방지: 대사 읽을 틈을 줘요
+          r.t = now; st[c.id] = r;
+          // 단계마다 그 단계 대사를 전부 한 번씩 보여 준 뒤 다음 단계로 넘어가요
+          const tiers = c.touch.chest; let k = r.n++, tier = 0;
+          while (tier < tiers.length - 1 && k >= tiers[tier].length) { k -= tiers[tier].length; tier++; }
+          const line = tier === tiers.length - 1 ? tiers[tier][k % tiers[tier].length] : tiers[tier][k];
           const im = $('.lobby .lch img'); if (im) { im.classList.remove('flinch'); void im.offsetWidth; im.classList.add('flinch'); }
-          say(c.name, pick(tiers[tier]));
+          say(c.name, line);
           if (S.touch.n < 10) { S.touch.n++; addAff(c.id, 5); count('touch'); }
           save(); return;
         }
@@ -350,8 +354,10 @@ const SCREENS = {
     scr().innerHTML = header(sh.name || '상점') + `<div class="body">
       <div class="card row">${clerk && upper(clerk) ? `<div class="av" style="width:56px;height:56px;flex-basis:56px"><img src="${upper(clerk)}"></div>` : '<div style="font-size:36px">🧑‍💼</div>'}<p class="grow" style="margin:0;font-size:14px" id="clerk">${esc(fill(pick(sh.hello || ['어서 오세요!']), S))}</p></div>
       ${matLine()}
-      ${items.map(it => { const left = it.lim - (S.shop.buy[it.id] || 0); return `<div class="li"><div class="grow"><div class="t">${esc(it.name)}</div><div class="d">오늘 ${left}/${it.lim} · ${esc(rewardText(it.cost))}</div></div><button class="btn sm" data-act="buy" data-v="${it.id}" ${left <= 0 ? 'disabled' : ''}>구매</button></div>`; }).join('')}</div>`;
+      ${items.map(it => { const left = it.lim - (S.shop.buy[it.id] || 0); return `<div class="li"><div class="grow"><div class="t">${esc(it.name)}</div><div class="d">오늘 ${left}/${it.lim} · ${esc(rewardText(it.cost))}</div></div><button class="btn sm" data-act="buy" data-v="${it.id}" ${left <= 0 ? 'disabled' : ''}>구매</button></div>`; }).join('')}
+      <div style="text-align:right;margin-top:18px"><button class="vault" data-act="vault">🗝 관리관 전용 비상금고</button></div></div>`;
     bind({
+      vault() { give({ gems: 10000 }, true); sfx('ok'); toast(`${T('currency')} +10,000`); refresh(); },
       buy(id) {
         const it = items.find(x => x.id === id);
         if ((S.shop.buy[id] || 0) >= it.lim) return;

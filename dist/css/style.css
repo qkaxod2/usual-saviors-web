@@ -241,3 +241,6 @@ input[type=text]{background:rgba(255,255,255,.06);border:1px solid var(--line);b
 .lobby .hit.c{top:40%;height:16%;left:30%;right:30%;z-index:2}
 .lobby .lch img.flinch{animation:flinch .45s ease-out, breath 5s ease-in-out .45s infinite}
 @keyframes flinch{0%{transform:none}20%{transform:translateY(4px) scale(.985) rotate(-1.2deg)}45%{transform:translateX(-5px) rotate(1deg)}70%{transform:translateX(3px)}100%{transform:none}}
+
+.vault{background:none;border:0;color:var(--muted,#8a93a6);opacity:.35;font-size:11px;padding:4px 2px;cursor:pointer}
+.vault:active{opacity:.8}
