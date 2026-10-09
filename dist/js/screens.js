@@ -31,7 +31,7 @@ function bind(handlers) {
     const g = e.target.closest('[data-go]');
     if (g) { sfx('btn'); const [n, a] = g.dataset.go.split(':'); go(n, a); return; }
     const a = e.target.closest('[data-act]');
-    if (a && handlers && handlers[a.dataset.act]) { sfx('btn'); handlers[a.dataset.act](a.dataset.v, a, e); }
+    if (a && handlers && handlers[a.dataset.act]) { if (a.dataset.v !== 'chest') sfx('btn'); handlers[a.dataset.act](a.dataset.v, a, e); }
   };
 }
 const ph = (c, cls = '') => `<div class="ph ${cls}" style="width:100%;height:100%">${esc(c?.name?.[0] || '?')}</div>`;
@@ -67,7 +67,7 @@ const SCREENS = {
     bgm(G.prog?.scene?.lobby || '로비');
     scr().innerHTML = `<div class="lobby">
       <div class="lbg" style='${bgU ? `background-image:url("${bgU}")` : bgCss(G.prog?.lobbyBg)}'></div>
-      ${c ? `<div class="lch">${poseU ? `<img src="${poseU}" alt="">` : ''}</div><div class="hit h" data-act="touch" data-v="head"></div><div class="hit b" data-act="touch" data-v="body"></div>${c.touch?.chest?.length ? `<div class="hit c" data-act="touch" data-v="chest"${c.touch.chestTop ? ` style="top:${+c.touch.chestTop}%"` : ''}></div>` : ''}<div id="tfx"></div>` : ''}
+      ${c ? `<div class="lch">${poseU ? `<img src="${poseU}" alt="">` : ''}</div><div class="hit h" data-act="touch" data-v="head"></div><div class="hit b" data-act="touch" data-v="body"></div>${c.touch?.chest?.length ? `<div class="hit c" data-act="touch" data-v="chest"${c.touch.chestTop ? ` style="top:${+c.touch.chestTop}%"` : ''}></div>` : ''}` : ''}
       <div class="ltop"><div class="top"><h1 style="font-size:14px">${esc(playerName(S))} <span class="muted">· ${esc(G.meta.title || '')}</span></h1>${resBar()}</div></div>
       <div class="lside">
         <button data-go="mail"><i>✉️</i>우편${b.mail ? '<span class="dot"></span>' : ''}</button>
@@ -95,15 +95,13 @@ const SCREENS = {
         if (!c) return;
         const o = S.owned[c.id];
         if (part === 'chest') {
-          // 특수 터치: 연속으로 누를수록 반응이 단계적으로 격해져요 (20초 지나면 초기화)
+          // 특수 터치: 연속으로 누르면 대사가 1→2→3단계로 넘어가요 (20초 지나면 처음부터). 연출은 놀라는 흔들림만.
           const now = Date.now(), st = (window.__chestT ||= {}), r = st[c.id] && now - st[c.id].t < 20000 ? st[c.id] : { n: 0 };
           r.n++; r.t = now; st[c.id] = r;
           const tiers = c.touch.chest, tier = Math.min(r.n, tiers.length) - 1;
-          const im = $('.lobby .lch img'); if (im) { im.classList.remove('flinch', 'turn'); void im.offsetWidth; im.classList.add(tier >= 2 ? 'turn' : 'flinch'); }
-          const fx = $('#tfx'); if (fx) { fx.innerHTML = `<span class="tmark t${tier}">${tier >= 2 ? '💢' : '!'}</span>`; setTimeout(() => { if (fx) fx.innerHTML = ''; }, 900); }
-          sfx(tier >= 2 ? 'lose' : 'hit');
+          const im = $('.lobby .lch img'); if (im) { im.classList.remove('flinch'); void im.offsetWidth; im.classList.add('flinch'); }
           say(c.name, pick(tiers[tier]));
-          if (tier < 2 && S.touch.n < 10) { S.touch.n++; addAff(c.id, 5); count('touch'); }
+          if (S.touch.n < 10) { S.touch.n++; addAff(c.id, 5); count('touch'); }
           save(); return;
         }
         let pool = (part === 'head' ? c.touch?.head : c.touch?.body) || [];
