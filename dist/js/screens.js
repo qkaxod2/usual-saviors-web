@@ -1,0 +1,555 @@
+// 화면들
+import { $, $$, esc, sfx, bgm, toast, modal, confirmBox, fmt, dur, sleep, setMuted, audio, pick } from './util.js';
+import { G, T, img, charById, charByName, standing, upper, libImg, bgCss, elems, roleName, rarName, fill, playerName, clearImported } from './data.js';
+import {
+  S, save, give, rewardText, count, stats, power, capLv, lvCost, limitCost, wCost, canPay, pay, addAff, filesOpen,
+  owned, squadChars, teamPower, allStages, stageOpen, threadOpen, badges, MISSIONS, PASS, PASS_STEP,
+  MAX_LIMIT, MAX_WLV, MAX_AFF, MAX_DUP, resetSave, exportSave, importSave, addChar,
+} from './state.js';
+import { playStory, playLines, parseScript } from './story.js';
+import { runBattle } from './battle.js';
+import { banners, pull, pullShow, COST1, COST10, rates, poolOf } from './gacha.js';
+
+const scr = () => $('#screen');
+let current = 'lobby', currentArg = null;
+export function go(name, arg) {
+  current = name; currentArg = arg;
+  const f = SCREENS[name]; if (!f) return;
+  scr().onclick = null; scr().innerHTML = '';
+  f(arg);
+  scr().scrollTop = 0;
+}
+const refresh = () => go(current, currentArg);
+
+const resBar = () => `<div class="res"><span>💎 <b>${fmt(S.gems)}</b></span><span>🪙 <b>${fmt(S.gold)}</b></span></div>`;
+const header = (title, back = 'lobby') => `<div class="top"><button class="back" data-go="${back}">‹</button><h1>${esc(title)}</h1>${resBar()}</div>`;
+function bind(handlers) {
+  scr().onclick = e => {
+    const g = e.target.closest('[data-go]');
+    if (g) { sfx('btn'); const [n, a] = g.dataset.go.split(':'); go(n, a); return; }
+    const a = e.target.closest('[data-act]');
+    if (a && handlers && handlers[a.dataset.act]) { sfx('btn'); handlers[a.dataset.act](a.dataset.v, a, e); }
+  };
+}
+const ph = (c, cls = '') => `<div class="ph ${cls}" style="width:100%;height:100%">${esc(c?.name?.[0] || '?')}</div>`;
+const thumb = c => upper(c) ? `<img src="${upper(c)}" alt="${esc(c.name)}" loading="lazy">` : ph(c);
+const elTag = e => `<span class="el el-${esc(e)}">${esc(e)}</span>`;
+const matLine = () => `<div class="res" style="flex-wrap:wrap;margin:4px 0"><span>📒 ${T('expMat')} <b>${S.mat.exp}</b></span><span>⚙️ ${T('wMat')} <b>${S.mat.wmat}</b></span><span>💠 ${T('core')} <b>${S.mat.core}</b></span></div>`;
+
+const SCREENS = {
+  // ============ 타이틀 ============
+  title() {
+    const lobbyC = charById(S.lobbyChar) || owned()[0] || G.chars[0];
+    const bgName = G.prog?.titleBg || G.prog?.lobbyBg;
+    const art = lobbyC && (img(lobbyC.illust?.id));
+    bgm(G.prog?.scene?.title || '타이틀');
+    scr().innerHTML = `<div class="title" style='${art ? `background-image:url("${art}")` : bgCss(bgName)}'>
+      ${!art && lobbyC && standing(lobbyC) ? `<div class="tchar"><img src="${standing(lobbyC)}"></div>` : ''}
+      <div class="tn">${esc(G.meta.title || 'Usual Saviors')}</div><div class="ts">${esc(G.meta.sub || '')}</div>
+      <div class="tap">화면을 눌러 시작</div></div>`;
+    scr().onclick = async () => {
+      sfx('ok'); scr().onclick = null;
+      if (!S.seenOpening) await firstRun();
+      go('lobby');
+    };
+  },
+
+  // ============ 로비 ============
+  lobby() {
+    const own = owned();
+    let c = charById(S.lobbyChar); if (!c || !S.owned[c.id]) c = own[0];
+    const b = badges();
+    const bgU = c && img(c.lbbg?.id);
+    const poseU = c && (img(c.pose?.id) || standing(c));
+    bgm(G.prog?.scene?.lobby || '로비');
+    scr().innerHTML = `<div class="lobby">
+      <div class="lbg" style='${bgU ? `background-image:url("${bgU}")` : bgCss(G.prog?.lobbyBg)}'></div>
+      ${c ? `<div class="lch">${poseU ? `<img src="${poseU}" alt="">` : ''}</div><div class="hit h" data-act="touch" data-v="head"></div><div class="hit b" data-act="touch" data-v="body"></div>` : ''}
+      <div class="ltop"><div class="top"><h1 style="font-size:14px">${esc(playerName(S))} <span class="muted">· ${esc(G.meta.title || '')}</span></h1>${resBar()}</div></div>
+      <div class="lside">
+        <button data-go="mail"><i>✉️</i>우편${b.mail ? '<span class="dot"></span>' : ''}</button>
+        <button data-go="missions"><i>📋</i>임무${b.mission ? '<span class="dot"></span>' : ''}</button>
+        <button data-go="shop"><i>🛒</i>${esc(G.meta.shop?.name || '상점')}</button>
+        <button data-go="records"><i>📚</i>기록</button>
+        <button data-go="settings"><i>⚙️</i>설정</button>
+      </div>
+      <div id="bub"></div>
+      <div class="lmenu">
+        <button data-go="ops"><i>⚔️</i>${esc(T('ops'))}</button>
+        <button data-go="crew"><i>👥</i>${esc(T('crew'))}</button>
+        <button class="big" data-go="recruit"><i>✨</i>${esc(T('gacha'))}</button>
+        <button data-go="talk"><i>💬</i>메신저${b.talk ? '<span class="dot"></span>' : ''}</button>
+        <button data-go="dispatch"><i>🧭</i>${esc(T('dispatch'))}${b.disp ? '<span class="dot"></span>' : ''}</button>
+      </div></div>`;
+    let bt = null;
+    const say = (who, text) => {
+      clearTimeout(bt);
+      $('#bub').innerHTML = `<div class="bubble"><b>${esc(who)}</b>${esc(fill(text, S))}</div>`;
+      bt = setTimeout(() => { const x = $('#bub'); if (x) x.innerHTML = ''; }, 5200);
+    };
+    bind({
+      touch(part) {
+        if (!c) return;
+        const o = S.owned[c.id];
+        let pool = (part === 'head' ? c.touch?.head : c.touch?.body) || [];
+        if (Math.random() < 0.45 || !pool.length) {
+          pool = [...(c.lines || [])];
+          for (const k of Object.keys(c.affLines || {})) if (o.aff >= +k) pool.push(...c.affLines[k]);
+        }
+        if (pool.length) say(c.name, pick(pool));
+        if (S.touch.n < 10) { S.touch.n++; const ups = addAff(c.id, 5); count('touch'); save(); if (ups.length) toast(`${c.name} 호감도 ${ups.at(-1)}단계!`); }
+      },
+    });
+    if (c && Math.random() < 0.6) setTimeout(() => { if (current === 'lobby' && $('#bub')) say(c.name, pick(c.lines || [c.intro || '…'])); }, 600);
+    if (!own.length) setTimeout(() => $('#bub') && ($('#bub').innerHTML = `<div class="bubble"><b>안내</b>아직 함께하는 ${esc(T('crew'))}이 없어요. ${esc(T('gacha'))}에서 첫 계약을 맺어 보세요!</div>`), 300);
+  },
+
+  // ============ 영입 ============
+  recruit(bid) {
+    const bs = banners(); const b = bs.find(x => x.id === bid) || bs[0];
+    if (!b) { scr().innerHTML = header(T('gacha')) + '<div class="body"><p class="muted">열려 있는 영입이 없어요.</p></div>'; bind(); return; }
+    const R = rates(); const pity = S.pity[b.id] || 0;
+    const pu = (b.pickup || []).map(charById).filter(Boolean);
+    const face = pu[0] || poolOf(b).filter(c => c.rarity === 3)[0] || G.chars[0];
+    bgm(G.prog?.scene?.gacha || '계약');
+    scr().innerHTML = header(T('gacha')) + `<div class="body">
+      <div class="bsel">${bs.map(x => `<button class="${x === b ? 'on' : ''}" data-go="recruit:${x.id}">${esc(x.name)}</button>`).join('')}</div>
+      <div class="banner">${face && standing(face) ? `<img src="${standing(face)}" alt="">` : ''}
+        <div class="bi"><span class="tag">${b.type === 'pickup' ? '픽업' : b.type === 'pool' ? '한정 풀' : '상시'}</span><h2>${esc(b.name)}</h2>
+        <div class="muted">${esc(b.desc || '')}</div>${pu.length ? `<div style="margin-top:6px;font-size:13px">확률 상승: ${pu.map(c => `<b class="r${c.rarity}">${esc(c.name)}</b>`).join(', ')}</div>` : ''}</div></div>
+      <div class="card"><div class="row"><span class="grow muted">SSR ${R.ssr}% · SR ${R.sr}% · ${R.pity}회 안에 SSR 확정</span><b>${pity}/${R.pity}</b></div>
+        <div class="bar" style="margin-top:6px"><i style="width:${pity / R.pity * 100}%"></i></div>
+        ${S.firstTen ? '<div class="muted" style="margin-top:6px;color:var(--gold)">첫 10회 계약은 SSR 1명 확정!</div>' : ''}</div>
+      <div class="row" style="gap:10px"><button class="btn sub grow" data-act="p" data-v="1">1회 계약<br><small>💎 ${COST1}</small></button>
+        <button class="btn grow" data-act="p" data-v="10">10회 계약<br><small>💎 ${COST10}</small></button></div>
+      <div class="card"><b style="font-size:14px">등장 ${esc(T('crew'))}</b><div class="grid" style="margin-top:8px">${poolOf(b).sort((x, y) => y.rarity - x.rarity).map(c => `<button class="cc ${S.owned[c.id] ? '' : 'off'}" data-go="char:${c.id}">${thumb(c)}<span class="cr r${c.rarity}">${rarName(c.rarity)}</span><span class="cn">${esc(c.name)}</span></button>`).join('')}</div></div>
+      <button class="btn sub" style="width:100%" data-act="hist">영입 기록</button></div>`;
+    bind({
+      async p(n) {
+        n = +n; const cost = n === 10 ? COST10 : COST1;
+        if (S.gems < cost) { toast(`${T('currency')}이 부족해요`); return; }
+        S.gems -= cost; const res = pull(b, n); await pullShow(res); refresh();
+      },
+      hist() {
+        modal(`<h3>영입 기록</h3>${S.history.length ? S.history.slice(0, 60).map(h => { const c = charById(h.id); return c ? `<div class="sw"><span class="r${c.rarity}">${rarName(c.rarity)} ${esc(c.name)}</span><span class="muted">${esc(h.b)}</span></div>` : ''; }).join('') : '<p class="muted">아직 없어요</p>'}`);
+      },
+    });
+  },
+
+  // ============ 사원 목록 ============
+  crew() {
+    const list = [...G.chars].sort((a, b) => (!!S.owned[b.id] - !!S.owned[a.id]) || b.rarity - a.rarity || (power(b) - power(a)));
+    scr().innerHTML = header(T('crew')) + `<div class="body"><p class="muted">보유 ${owned().length} / ${G.chars.length}</p>
+      <div class="grid">${list.map(c => { const o = S.owned[c.id]; return `<button class="cc ${o ? '' : 'off'}" data-go="char:${c.id}">${thumb(c)}
+        <span class="cr r${c.rarity}">${rarName(c.rarity)}</span><span class="ce">${elTag(c.elem)}</span><span class="cn">${esc(c.name)}</span>${o ? `<span class="lv">Lv.${o.lv}</span>` : ''}</button>`; }).join('')}</div></div>`;
+    bind();
+  },
+
+  // ============ 사원 상세 ============
+  char(id, tab = 'info') {
+    const c = charById(id); if (!c) return go('crew');
+    const o = S.owned[c.id];
+    const st = stats(c, o || { lv: 1, limit: 0, wlv: 0, aff: 0 });
+    const tabs = [['info', '정보'], ['grow', T('enhance')], ['lines', '대사'], ['files', T('files')], ['gallery', '갤러리']];
+    const t = CHTAB[c.id] || tab;
+    const body = {
+      info: () => `<div class="card"><div class="stats"><div>HP<b>${fmt(st.hp)}</b></div><div>공격<b>${fmt(st.atk)}</b></div><div>방어<b>${fmt(st.def)}</b></div><div>속도<b>${fmt(st.spd)}</b></div><div>전투력<b>${fmt(power(c, o))}</b></div><div>소속<b style="color:var(--tx)">${esc(c.faction || '-')}</b></div></div></div>
+        <div class="card"><b>${esc(c.skill?.name || '')}</b> <span class="tag">재사용 ${c.skill?.cd ?? '-'}턴</span><p class="muted" style="margin:6px 0 0">${esc(c.skill?.desc || '')}</p></div>
+        <div class="card"><b>${esc(T('weapon'))} · ${esc(c.weapon?.name || '')}</b>${c.weapon && img(c.weapon.id) ? `<img src="${img(c.weapon.id)}" style="width:100%;border-radius:10px;margin-top:6px">` : ''}<p class="muted" style="margin:6px 0 0">${esc(c.weapon?.desc || '')}</p></div>
+        <div class="card"><p style="margin:0;font-size:14px;line-height:1.7">${esc(c.profile || '')}</p></div>`,
+      grow: () => {
+        if (!o) return '<p class="muted">아직 계약하지 않은 사원이에요.</p>';
+        const lc = lvCost(o), mc = limitCost(o), wc = wCost(o), cap = capLv(o);
+        return matLine() + `<div class="card"><div class="row"><b class="grow">레벨 ${o.lv} / ${cap}</b><span class="muted">${esc(T('expMat'))} ${lc.exp} · 🪙${fmt(lc.gold)}</span></div>
+          <div class="row" style="margin-top:8px"><button class="btn grow sm" data-act="lv" ${o.lv >= cap ? 'disabled' : ''}>${esc(T('enhance'))} +1</button><button class="btn sub sm" data-act="lvmax" ${o.lv >= cap ? 'disabled' : ''}>가능한 만큼</button></div>
+          ${o.lv >= cap && o.limit < MAX_LIMIT ? '<p class="muted" style="margin:6px 0 0">레벨 상한이에요. 직급승진으로 상한을 올려요.</p>' : ''}</div>
+          <div class="card"><div class="row"><b class="grow">${esc(T('limit'))} ${'★'.repeat(o.limit)}${'☆'.repeat(MAX_LIMIT - o.limit)}</b><span class="muted">${esc(T('core'))} ${mc.core} · 🪙${fmt(mc.gold)}</span></div>
+          <p class="muted" style="margin:6px 0">상한 +10, 능력치 +8%. 첫 승진 때 승진 CG가 열려요.</p>
+          <button class="btn sm" style="width:100%" data-act="limit" ${o.limit >= MAX_LIMIT || o.lv < cap ? 'disabled' : ''}>${o.limit >= MAX_LIMIT ? '최대 직급' : esc(T('limit'))}</button></div>
+          <div class="card"><div class="row"><b class="grow">${esc(T('weapon'))} +${o.wlv}</b><span class="muted">${esc(T('wMat'))} ${wc.wmat} · 🪙${fmt(wc.gold)}</span></div>
+          <p class="muted" style="margin:6px 0">강화마다 공격 +4%.</p><button class="btn sm" style="width:100%" data-act="w" ${o.wlv >= MAX_WLV ? 'disabled' : ''}>${o.wlv >= MAX_WLV ? '최대 강화' : '강화'}</button></div>
+          <div class="card"><div class="row"><b class="grow">호감도 ${o.aff} / ${MAX_AFF}</b><span class="muted">잠재 ${o.dup}/${MAX_DUP}</span></div><div class="bar" style="margin-top:6px"><i style="width:${o.aff >= MAX_AFF ? 100 : o.affExp}%;background:var(--warn)"></i></div>
+          <p class="muted" style="margin:6px 0 0">로비 대화, 전투, 메신저, 파견으로 올라요.</p></div>`;
+      },
+      lines: () => {
+        const aff = o?.aff || 0;
+        const sec = (title, arr, open) => arr?.length ? `<div class="card ${open ? '' : 'lock'}"><b>${esc(title)}</b>${open ? arr.map(l => `<p class="lines" style="margin:6px 0;font-size:14px;line-height:1.6">「${esc(fill(l, S))}」</p>`).join('') : '<p class="muted">🔒 잠겨 있어요</p>'}</div>` : '';
+        return sec('인사', [c.intro].filter(Boolean), true) + sec('일상', c.lines, !!o)
+          + Object.keys(c.affLines || {}).map(k => sec(`호감도 ${k}`, c.affLines[k], aff >= +k)).join('')
+          + sec('터치 · 머리', c.touch?.head, !!o) + sec('터치 · 몸', c.touch?.body, !!o)
+          + sec('레벨 업', c.lvLines, !!o) + sec('중복 영입', c.dupLines, !!o && o.dup > 0);
+      },
+      files: () => (c.files || []).map((f, i) => filesOpen(c, f) ? `<div class="card"><b>${esc(T('files'))} ${i + 1}</b><p style="font-size:14px;line-height:1.75;margin:6px 0 0">${esc(fill(f.text, S))}</p></div>`
+        : `<div class="card lock"><b>${esc(T('files'))} ${i + 1}</b><p class="muted">🔒 ${f.dup > 1 ? `중복 영입 ${f.dup - 1}회 이상` : '계약 후'} 열려요</p></div>`).join('') || '<p class="muted">기록이 없어요</p>',
+      gallery: () => {
+        const items = [['일러스트', c.illust, !!o], ['로비', c.pose, !!o], ['상반신', c.upper, !!o], [`${T('limit')} CG`, c.lbcg, !!o && o.limit >= 1]];
+        return `<div class="thumbs" style="flex-wrap:wrap">${items.filter(x => x[1] && img(x[1].id)).map(([n, it, op]) => `<button data-act="${op ? 'view' : ''}" data-v="${it.id}" class="${op ? '' : 'lock'}">${op ? `<img src="${img(it.id)}">` : '<div class="ph" style="height:100%">🔒</div>'}<span>${esc(n)}</span></button>`).join('')}</div>`;
+      },
+    };
+    scr().innerHTML = header(c.name, 'crew') + `<div class="body">
+      <div class="ch-hero">${standing(c) ? `<img src="${standing(c)}" alt="">` : ph(c)}</div>
+      <div class="row" style="margin-top:6px"><span class="r${c.rarity}" style="font-weight:900">${rarName(c.rarity)}</span>${elTag(c.elem)}<span class="tag">${esc(roleName(c.role))}</span><b class="grow" style="font-size:18px">${esc(c.name)}</b>${o ? `<span class="muted">Lv.${o.lv}</span>` : '<span class="tag">미보유</span>'}</div>
+      ${o ? `<div class="row" style="margin-top:8px"><button class="btn sub sm grow" data-act="lobby">${S.lobbyChar === c.id ? '✓ 로비 사원' : '로비에 세우기'}</button><button class="btn sub sm grow" data-act="squad">${S.squad.includes(c.id) ? '✓ 편성 중' : '편성에 넣기'}</button></div>` : ''}
+      <div class="tabs">${tabs.map(([k, n]) => `<button class="${k === t ? 'on' : ''}" data-act="tab" data-v="${k}">${esc(n)}</button>`).join('')}</div>
+      ${body[t]()}</div>`;
+    const lvUp = () => {
+      const c2 = lvCost(o); if (o.lv >= capLv(o)) return false; if (!pay(c2)) return false;
+      o.lv++; count('enhance'); return true;
+    };
+    bind({
+      tab(v) { CHTAB[c.id] = v; refresh(); },
+      lobby() { S.lobbyChar = c.id; save(); toast(`${c.name}이(가) 로비에 서요`); refresh(); },
+      squad() {
+        if (S.squad.includes(c.id)) S.squad = S.squad.filter(x => x !== c.id);
+        else { if (S.squad.length >= 4) { toast('편성은 4명까지예요'); return; } S.squad.push(c.id); }
+        save(); refresh();
+      },
+      lv() { if (lvUp()) { sfx('up'); save(); toast(pick(c.lvLines || ['좋아요!'])); refresh(); } else toast('재료가 부족해요'); },
+      lvmax() { let n = 0; while (lvUp()) n++; save(); if (n) { sfx('up'); toast(`레벨 +${n}`); refresh(); } else toast('재료가 부족해요'); },
+      async limit() {
+        const mc = limitCost(o); if (!canPay(mc)) { toast('재료가 부족해요'); return; }
+        if (!await confirmBox(`<h3>${esc(T('limit'))}</h3><p>${esc(rewardText(mc))}을(를) 써서 승진할까요?</p>`, '승진')) return;
+        pay(mc); o.limit++; save(); sfx('ssr');
+        if (o.limit === 1 && c.lbcg && img(c.lbcg.id)) await viewImg(img(c.lbcg.id));
+        refresh();
+      },
+      w() { const wc = wCost(o); if (!pay(wc)) { toast('재료가 부족해요'); return; } o.wlv++; save(); sfx('up'); refresh(); },
+      view(v) { if (v) viewImg(img(v)); },
+    });
+  },
+
+  // ============ 출격 ============
+  ops(tab = 'story') {
+    const sq = squadChars();
+    const tp = teamPower();
+    const st = allStages();
+    const farms = G.meta.farms?.length ? G.meta.farms : [{ key: 'exp', name: '경험 훈련' }, { key: 'gold', name: '자금 확보' }, { key: 'wmat', name: '재료 회수' }, { key: 'core', name: '핵 회수' }];
+    scr().innerHTML = header(T('ops')) + `<div class="body">
+      <div class="card"><div class="row"><b class="grow">편성 · 전투력 ${fmt(tp)}</b><button class="btn sub sm" data-act="edit">편성 변경</button></div>
+        <div class="squad-pick">${[0, 1, 2, 3].map(i => sq[i] ? `<div class="cc">${thumb(sq[i])}<span class="ce">${elTag(sq[i].elem)}</span><span class="cn">${esc(sq[i].name)}</span></div>` : '<div class="empty" data-act="edit">+</div>').join('')}</div></div>
+      <div class="tabs"><button class="${tab === 'story' ? 'on' : ''}" data-go="ops:story">메인 스토리</button><button class="${tab === 'farm' ? 'on' : ''}" data-go="ops:farm">${esc(T('farm'))}</button></div>
+      ${tab === 'story' ? (G.chapters || []).map(ch => `<h3 style="margin:14px 0 4px;font-size:15px">${esc(ch.title)}</h3>${ch.stages.map(s => {
+        const op = stageOpen(s.id), dn = !!S.cleared[s.id];
+        return `<button class="stage ${dn ? 'done' : ''} ${op ? '' : 'lockd'}" data-act="stage" data-v="${s.id}"><span class="no">${esc(s.title.split(/[.\s]/)[0])}</span><span class="grow">${esc(s.title.replace(/^[\d-]+\.\s*/, ''))}<br><span class="muted">${s.enemies.map(e => `${e.name}${e.boss ? ' 👑' : ''}`).join(', ')}</span></span>${dn ? '' : `<span class="rw">💎${s.reward}</span>`}</button>`;
+      }).join('')}`).join('') : farms.map(f => { const left = 3 - (S.farm.n[f.key] || 0); return `<button class="stage ${left > 0 ? '' : 'lockd'}" data-act="farm" data-v="${f.key}"><span class="no">${{ exp: '📒', gold: '🪙', wmat: '⚙️', core: '💠' }[f.key] || '⚔️'}</span><span class="grow">${esc(f.name)}<br><span class="muted">${esc(rewardText(farmReward(f.key)))}</span></span><span class="muted">오늘 ${left}/3</span></button>`; }).join('')}
+    </div>`;
+    bind({
+      edit: () => squadEdit().then(refresh),
+      async stage(id) {
+        if (!stageOpen(id)) { toast('이전 작전을 먼저 끝내요'); return; }
+        const { ch, s } = st.find(x => x.s.id === id);
+        if (!await needSquad()) return;
+        const first = !S.cleared[s.id];
+        const r = await modal(`<h3>${esc(s.title)}</h3><p class="muted">${esc(ch.title)}</p>
+          ${s.enemies.map(e => `<div class="sw"><span>${elTag(e.elem)} ${esc(e.name)}${e.boss ? ' 👑' : ''}</span><span class="muted">HP ${fmt(e.hp)} · 공격 ${e.atk}</span></div>`).join('')}
+          <p style="margin:10px 0 0">${first ? `첫 클리어 보상: 💎 ${s.reward}` : `반복 보상: ${esc(rewardText(repeatReward(s)))}`}</p>`,
+          [{ label: '취소', cls: 'sub', value: 0 }, ...(first ? [] : [{ label: '스토리 다시 보기', cls: 'sub', value: 2 }]), { label: '출격', value: 1 }]);
+        if (!r) return;
+        if (r === 2) { await playStory(s.title, s.pre); await playStory(s.title, s.post); refresh(); return; }
+        if (first && s.pre) await playStory(s.title, s.pre);
+        const bgName = (parseScript(s.pre).find(l => l.type === 'cmd' && l.cmd === '배경') || {}).arg;
+        const res = await runBattle({ title: s.title, bg: bgName, enemies: s.enemies, squad: squadChars() });
+        if (!res.win) { await modal('<h3>작전 실패</h3><p class="muted">사원을 육성하거나 편성을 바꿔서 다시 도전해요.</p>'); refresh(); return; }
+        count('battle'); afterBattle(res);
+        if (first) {
+          S.cleared[s.id] = Date.now(); save();
+          if (s.post) await playStory(s.title, s.post);
+          give({ gems: s.reward, gold: 2000, exp: 3 }, true);
+          await modal(`<h3>작전 성공!</h3><p>${esc(rewardText({ gems: s.reward, gold: 2000, exp: 3 }))}</p>${newThreads(s.id)}`);
+        } else { const rw = repeatReward(s); give(rw, true); await modal(`<h3>작전 성공!</h3><p>${esc(rewardText(rw))}</p>`); }
+        refresh();
+      },
+      async farm(key) {
+        if ((S.farm.n[key] || 0) >= 3) { toast('오늘은 더 할 수 없어요'); return; }
+        if (!await needSquad()) return;
+        const f = farms.find(x => x.key === key);
+        const res = await runBattle({ title: f.name, bg: G.prog?.lobbyBg, enemies: farmEnemies(key), squad: squadChars() });
+        if (!res.win) { await modal('<h3>실패</h3><p class="muted">조금 더 육성한 뒤에 와요.</p>'); refresh(); return; }
+        S.farm.n[key] = (S.farm.n[key] || 0) + 1; count('battle'); afterBattle(res);
+        const rw = farmReward(key); give(rw, true); await modal(`<h3>정리 완료!</h3><p>${esc(rewardText(rw))}</p>`); refresh();
+      },
+    });
+  },
+
+  // ============ 사내메신저 ============
+  talk() {
+    const ts = (G.threads || []).filter(threadOpen);
+    scr().innerHTML = header(T('talk')) + `<div class="body">${ts.length ? ts.map(t => {
+      const c = charById(t.charId); const d = S.threads[t.id]?.done;
+      return `<button class="thread" data-go="thread:${t.id}"><div class="av">${c && upper(c) ? `<img src="${upper(c)}">` : ''}</div><div class="grow"><b style="font-size:14px">${esc(c?.name || '?')}</b><div class="muted">${esc(t.title)}</div></div>${d ? '<span class="muted">읽음</span>' : '<span class="dot" style="position:static"></span>'}</button>`;
+    }).join('') : '<p class="muted">아직 온 메시지가 없어요. 작전을 진행하면 사원들이 말을 걸어와요.</p>'}</div>`;
+    bind();
+  },
+  thread(id) {
+    const t = (G.threads || []).find(x => x.id === id); if (!t) return go('talk');
+    const c = charById(t.charId);
+    scr().innerHTML = `<div class="top"><button class="back" data-go="talk">‹</button><div class="av" style="width:34px;height:34px;flex-basis:34px">${c && upper(c) ? `<img src="${upper(c)}">` : ''}</div><h1>${esc(c?.name || '')}<div class="muted" style="font-size:11px;font-weight:400">${esc(t.title)}</div></h1></div>
+      <div class="chat" id="chat"></div><div class="chat-ch" id="chch"></div>`;
+    bind();
+    playThread(t, c);
+  },
+
+  // ============ 현장파견 ============
+  dispatch() {
+    const fast = S.settings.fastDispatch;
+    const busy = new Set(Object.values(S.disp).flatMap(d => d.chars));
+    scr().innerHTML = header(T('dispatch')) + `<div class="body">${fast ? '<p class="muted" style="color:var(--gold)">빠른 파견(시험용) 켜짐: 시간이 분 단위로 줄어요</p>' : ''}${(G.dispatches || []).map(d => {
+      const run = S.disp[d.id];
+      const left = run ? run.end - Date.now() : 0;
+      return `<div class="li" style="flex-direction:column;align-items:stretch"><div class="row"><div class="grow"><div class="t">${esc(d.name)}</div><div class="d">${esc(d.desc || '')}</div></div></div>
+        <div class="row" style="margin-top:6px"><span class="muted grow">⏱ ${d.hours}${fast ? '분' : '시간'} · ${d.need}명 · <span class="rw">${esc(rewardText(d.reward || {}))}</span></span>
+        ${run ? (left <= 0 ? `<button class="btn sm" data-act="claim" data-v="${d.id}">보상 받기</button>` : `<span class="tag">${esc(dur(left))}</span>`) : `<button class="btn sub sm" data-act="send" data-v="${d.id}">보내기</button>`}</div>
+        ${run ? `<div class="row" style="margin-top:6px;gap:4px">${run.chars.map(id => { const c = charById(id); return c ? `<div class="av" style="width:30px;height:30px;flex-basis:30px">${upper(c) ? `<img src="${upper(c)}">` : ''}</div>` : ''; }).join('')}</div>` : ''}</div>`;
+    }).join('')}</div>`;
+    bind({
+      async send(id) {
+        const d = G.dispatches.find(x => x.id === id);
+        const free = owned().filter(c => !busy.has(c.id));
+        if (free.length < d.need) { toast(`쉬고 있는 ${T('crew')}이 ${d.need}명 필요해요`); return; }
+        const sel = await pickChars(free, d.need, `${d.name} · ${d.need}명 선택`);
+        if (!sel) return;
+        const ms = d.hours * (S.settings.fastDispatch ? 60e3 : 3600e3);
+        S.disp[id] = { chars: sel, start: Date.now(), end: Date.now() + ms }; count('dispatch'); save(); sfx('ok'); refresh();
+      },
+      claim(id) {
+        const d = G.dispatches.find(x => x.id === id), run = S.disp[id];
+        delete S.disp[id]; run.chars.forEach(cid => addAff(cid, 10));
+        give(d.reward || {}); refresh();
+      },
+    });
+    clearInterval(TICK); TICK = setInterval(() => { if (current !== 'dispatch') clearInterval(TICK); else if (Object.values(S.disp).length) refresh(); }, 1000);
+  },
+
+  // ============ 우편 ============
+  mail() {
+    scr().innerHTML = header('우편') + `<div class="body">${S.mail.length ? `<button class="btn" style="width:100%" data-act="all">모두 받기</button>` + S.mail.map((m, i) => `<div class="li"><div class="grow"><div class="t">${esc(m.title)}</div><div class="d">${esc(m.from || '')} · ${esc(fill(m.body || '', S))}</div>${m.reward ? `<div class="rw">${esc(rewardText(m.reward))}</div>` : ''}</div>${m.got ? '<span class="muted">받음</span>' : `<button class="btn sm" data-act="get" data-v="${i}">받기</button>`}</div>`).join('') : '<p class="muted">우편이 없어요</p>'}</div>`;
+    const get = i => { const m = S.mail[i]; if (m.got) return; m.got = true; m.read = true; give(m.reward || {}, true); };
+    bind({
+      get(i) { get(+i); save(); toast('받았어요'); refresh(); },
+      all() { S.mail.forEach((m, i) => get(i)); save(); toast('모두 받았어요'); refresh(); },
+    });
+  },
+
+  // ============ 보급관(상점) ============
+  shop() {
+    const sh = G.meta.shop || { name: '상점' }, clerk = sh.charId && charById(sh.charId);
+    const items = shopItems();
+    scr().innerHTML = header(sh.name || '상점') + `<div class="body">
+      <div class="card row">${clerk && upper(clerk) ? `<div class="av" style="width:56px;height:56px;flex-basis:56px"><img src="${upper(clerk)}"></div>` : '<div style="font-size:36px">🧑‍💼</div>'}<p class="grow" style="margin:0;font-size:14px" id="clerk">${esc(fill(pick(sh.hello || ['어서 오세요!']), S))}</p></div>
+      ${matLine()}
+      ${items.map(it => { const left = it.lim - (S.shop.buy[it.id] || 0); return `<div class="li"><div class="grow"><div class="t">${esc(it.name)}</div><div class="d">오늘 ${left}/${it.lim} · ${esc(rewardText(it.cost))}</div></div><button class="btn sm" data-act="buy" data-v="${it.id}" ${left <= 0 ? 'disabled' : ''}>구매</button></div>`; }).join('')}</div>`;
+    bind({
+      buy(id) {
+        const it = items.find(x => x.id === id);
+        if ((S.shop.buy[id] || 0) >= it.lim) return;
+        if (!pay(it.cost)) { $('#clerk').textContent = fill(pick(sh.poor || ['조금 모자라요.']), S); return; }
+        S.shop.buy[id] = (S.shop.buy[id] || 0) + 1; give(it.give, true); sfx('ok');
+        toast(rewardText(it.give)); refresh(); const cl = $('#clerk'); if (cl) cl.textContent = fill(pick(sh.buy || ['고마워요!']), S);
+      },
+    });
+  },
+
+  // ============ 임무 / 근태패스 ============
+  missions() {
+    const lv = Math.floor(S.pass.xp / PASS_STEP);
+    scr().innerHTML = header('임무') + `<div class="body"><h3 style="font-size:15px;margin:8px 0">일일 임무</h3>
+      ${MISSIONS.map(m => { const n = S.daily.cnt[m.k] || 0, done = n >= m.n, got = S.daily.got[m.k]; return `<div class="li"><div class="grow"><div class="t">${esc(m.t)}</div><div class="d">${Math.min(n, m.n)}/${m.n} · 💎${m.gems} · 패스 +${PASS_STEP / 2}</div></div>${got ? '<span class="muted">완료</span>' : `<button class="btn sm" data-act="m" data-v="${m.k}" ${done ? '' : 'disabled'}>받기</button>`}</div>`; }).join('')}
+      <h3 style="font-size:15px;margin:16px 0 6px">${esc(T('pass'))} <span class="muted">Lv.${lv} · ${S.pass.xp % PASS_STEP}/${PASS_STEP}</span></h3>
+      <div class="bar"><i style="width:${S.pass.xp % PASS_STEP}%"></i></div>
+      <div class="pass" style="margin-top:10px">${PASS.map(p => { const ok = lv >= p.lv, got = S.pass.got.includes(p.lv); return `<button class="${ok ? 'ok' : ''} ${got ? 'got' : ''}" data-act="p" data-v="${p.lv}">${p.lv}<br>${esc(rewardText(p.r).split(' · ')[0])}</button>`; }).join('')}</div>
+      <p class="muted">매월 1일에 처음부터 다시 시작해요.</p></div>`;
+    bind({
+      m(k) { const m = MISSIONS.find(x => x.k === k); if (S.daily.got[k] || (S.daily.cnt[k] || 0) < m.n) return; S.daily.got[k] = 1; give({ gems: m.gems, passXp: PASS_STEP / 2 }); refresh(); },
+      p(v) { v = +v; if (S.pass.got.includes(v) || Math.floor(S.pass.xp / PASS_STEP) < v) return; S.pass.got.push(v); give(PASS.find(x => x.lv === v).r); refresh(); },
+    });
+  },
+
+  // ============ 기록실 ============
+  records(tab = 'world') {
+    const w = G.world || {};
+    const cleared = allStages().filter(x => S.cleared[x.s.id]);
+    scr().innerHTML = header('기록') + `<div class="body"><div class="tabs"><button class="${tab === 'world' ? 'on' : ''}" data-go="records:world">세계관</button><button class="${tab === 'story' ? 'on' : ''}" data-go="records:story">스토리 다시 보기</button></div>
+      ${tab === 'world' ? `<div class="card"><b>${esc(w.name || '')}</b><p style="font-size:14px;line-height:1.75">${esc(w.summary || '')}</p></div>
+        ${w.lore ? `<div class="card"><b>배경</b><p style="font-size:14px;line-height:1.75;white-space:pre-wrap">${esc(w.lore)}</p></div>` : ''}
+        ${(w.factions || []).map(f => `<div class="card"><b>${esc(f.name)}</b><p class="muted" style="margin:6px 0 0;line-height:1.6">${esc(f.desc)}</p></div>`).join('')}`
+        : `<button class="stage" data-act="pro"><span class="no">✦</span><span class="grow">프롤로그</span></button>
+        ${cleared.map(({ s }) => `<button class="stage" data-act="st" data-v="${s.id}"><span class="no">▶</span><span class="grow">${esc(s.title)}</span></button>`).join('') || '<p class="muted">작전을 끝내면 여기서 다시 볼 수 있어요.</p>'}`}</div>`;
+    bind({
+      async pro() { await playStory('프롤로그', G.opening?.prologue); refresh(); },
+      async st(id) { const { s } = allStages().find(x => x.s.id === id); await playStory(s.title, s.pre); await playStory(s.title, s.post); refresh(); },
+    });
+  },
+
+  // ============ 설정 ============
+  settings() {
+    const st = S.settings;
+    scr().innerHTML = header('설정') + `<div class="body">
+      <div class="card"><b>${esc(T('player'))} 이름</b><div class="row" style="margin-top:8px"><input type="text" id="nm" value="${esc(S.name)}" placeholder="${esc(T('player'))}" maxlength="12"><button class="btn sm" data-act="name">저장</button></div></div>
+      <div class="card">
+        <div class="sw"><span>소리</span><button class="btn sub sm" data-act="mute">${st.muted ? '꺼짐' : '켜짐'}</button></div>
+        <div class="sw"><span>글자 속도</span><button class="btn sub sm" data-act="text">${st.text >= 50 ? '빠름' : st.text >= 28 ? '보통' : '느림'}</button></div>
+        <div class="sw"><span>스토리 자동 넘김</span><button class="btn sub sm" data-act="autoText">${st.autoText ? '켜짐' : '꺼짐'}</button></div>
+        <div class="sw"><span>빠른 파견 (시험용)</span><button class="btn sub sm" data-act="fast">${st.fastDispatch ? '켜짐' : '꺼짐'}</button></div>
+      </div>
+      <div class="card"><b>세이브</b><p class="muted">진행 상황은 이 브라우저에 저장돼요. 다른 기기로 옮기려면 내보내기를 써요.</p>
+        <div class="row"><button class="btn sub sm grow" data-act="exp">내보내기</button><button class="btn sub sm grow" data-act="imp">불러오기</button><button class="btn warn sm" data-act="reset">초기화</button></div>
+        <input type="file" id="sf" accept=".json,.txt" hidden></div>
+      ${DATA_SRC === 'imported' ? '<div class="card"><b>게임 데이터</b><p class="muted">브라우저로 가져온 백업 데이터를 쓰고 있어요.</p><button class="btn sub sm" data-act="unimp">가져온 데이터 지우기</button></div>' : ''}
+      <p class="muted" style="text-align:center">${esc(G.meta.title || '')} · Usual Saviors Web</p></div>`;
+    bind({
+      name() { S.name = $('#nm').value.trim(); save(); toast('저장했어요'); },
+      mute() { st.muted = !st.muted; setMuted(st.muted); save(); refresh(); },
+      text() { st.text = st.text >= 50 ? 14 : st.text >= 28 ? 52 : 28; save(); refresh(); },
+      autoText() { st.autoText = !st.autoText; save(); refresh(); },
+      fast() { st.fastDispatch = !st.fastDispatch; save(); refresh(); },
+      exp() {
+        const blob = new Blob([exportSave()], { type: 'application/json' });
+        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `usual-saviors-save-${new Date().toISOString().slice(0, 10)}.json`; a.click();
+      },
+      imp() { const f = $('#sf'); f.onchange = async () => { try { importSave(await f.files[0].text()); toast('불러왔어요'); go('lobby'); } catch (e) { toast('불러오지 못했어요'); } }; f.click(); },
+      async reset() { if (await confirmBox('<h3>처음부터 시작할까요?</h3><p class="muted">모든 진행 상황이 지워져요.</p>', '초기화')) { resetSave(); location.reload(); } },
+      async unimp() { if (await confirmBox('<h3>가져온 데이터를 지울까요?</h3>', '지우기')) { await clearImported(); location.reload(); } },
+    });
+  },
+};
+let TICK = null;
+const CHTAB = {};
+export let DATA_SRC = 'file';
+export function setDataSrc(s) { DATA_SRC = s; }
+
+// ---------- 보조 ----------
+function viewImg(u) {
+  return new Promise(r => {
+    const d = document.createElement('div'); d.className = 'viewer'; d.innerHTML = `<img src="${u}">`;
+    d.onclick = () => { d.remove(); r(); }; $('#app').append(d);
+  });
+}
+function repeatReward(s) { return { gold: Math.round(s.reward * 6), exp: 2 }; }
+function farmReward(k) { return { exp: { exp: 6, gold: 1000 }, gold: { gold: 9000 }, wmat: { wmat: 5, gold: 1000 }, core: { core: 2, gold: 1000 } }[k] || { gold: 5000 }; }
+function farmEnemies(k) {
+  const sq = squadChars(), n = Math.max(1, sq.length);
+  const avg = f => sq.reduce((a, c) => a + stats(c)[f], 0) / n;
+  const names = (G.lib || []).filter(l => l.kind === 'enemy').map(l => l.name);
+  const nm = i => names[i % Math.max(1, names.length)] || '훈련 표적';
+  const E = elems();
+  return [0, 1, 2].map(i => ({ name: nm(i), elem: E[(i + k.length) % E.length], hp: Math.round(avg('hp') * 1.1), atk: Math.round(avg('atk') * 0.62), def: Math.round(avg('def') * 0.9), spd: 95 + i * 5, boss: i === 2 && k === 'core' }));
+}
+function afterBattle(res) {
+  const ups = [];
+  for (const id of S.squad) { const u = addAff(id, 8); if (u.length) ups.push(charById(id).name); }
+  save(); if (ups.length) toast(`${ups.join(', ')} 호감도 상승!`);
+}
+function newThreads(stageId) {
+  const ts = (G.threads || []).filter(t => t.trigger?.type === 'clear' && t.trigger.value === stageId && threadOpen(t));
+  if (!ts.length) return '';
+  sfx('noti');
+  return `<p style="margin-top:10px;color:var(--ac)">💬 ${ts.map(t => esc(charById(t.charId)?.name || '')).join(', ')}에게서 메시지가 왔어요</p>`;
+}
+async function needSquad() {
+  if (squadChars().length) return true;
+  const own = owned();
+  if (!own.length) { await modal(`<h3>${esc(T('crew'))}이 없어요</h3><p class="muted">${esc(T('gacha'))}에서 먼저 계약해 주세요.</p>`); return false; }
+  S.squad = own.sort((a, b) => power(b) - power(a)).slice(0, 4).map(c => c.id); save();
+  toast('전투력 순으로 자동 편성했어요');
+  return true;
+}
+function shopItems() {
+  return [
+    { id: 'exp5', name: `${T('expMat')} ×5`, cost: { gold: 4000 }, give: { exp: 5 }, lim: 6 },
+    { id: 'wm3', name: `${T('wMat')} ×3`, cost: { gold: 6000 }, give: { wmat: 3 }, lim: 5 },
+    { id: 'core1', name: `${T('core')} ×1`, cost: { gold: 15000 }, give: { core: 1 }, lim: 3 },
+    { id: 'gold', name: `${T('gold')} ×20,000`, cost: { gems: 100 }, give: { gold: 20000 }, lim: 3 },
+  ];
+}
+function pickChars(list, n, title) {
+  return new Promise(res => {
+    const sel = new Set();
+    const m = $('#modal'); m.hidden = false;
+    const draw = () => {
+      m.innerHTML = `<div class="mbox"><h3>${esc(title)}</h3><div class="grid">${list.map(c => `<button class="cc ${sel.has(c.id) ? 'sel' : ''}" data-c="${c.id}">${thumb(c)}<span class="ce">${elTag(c.elem)}</span><span class="cn">${esc(c.name)}</span><span class="lv">Lv.${S.owned[c.id].lv}</span></button>`).join('')}</div>
+        <div class="acts"><button class="btn sub sm" data-x="0">취소</button><button class="btn sm" data-x="1" ${sel.size === n ? '' : 'disabled'}>확인 (${sel.size}/${n})</button></div></div>`;
+    };
+    draw();
+    m.onclick = e => {
+      const c = e.target.closest('[data-c]');
+      if (c) { const id = c.dataset.c; if (sel.has(id)) sel.delete(id); else if (sel.size < n) sel.add(id); sfx('btn'); draw(); return; }
+      const x = e.target.closest('[data-x]'); if (!x || x.disabled) return;
+      m.hidden = true; m.onclick = null; m.innerHTML = ''; res(x.dataset.x === '1' ? [...sel] : null);
+    };
+  });
+}
+function squadEdit() {
+  return new Promise(res => {
+    const own = owned().sort((a, b) => power(b) - power(a));
+    if (!own.length) { toast(`${T('gacha')}에서 먼저 계약해요`); res(); return; }
+    const sel = [...S.squad.filter(id => S.owned[id])];
+    const m = $('#modal'); m.hidden = false;
+    const draw = () => {
+      m.innerHTML = `<div class="mbox"><h3>편성 (최대 4명)</h3><div class="squad-pick">${[0, 1, 2, 3].map(i => { const c = charById(sel[i]); return c ? `<button class="cc" data-r="${c.id}">${thumb(c)}<span class="cn">${esc(c.name)}</span></button>` : '<div class="empty">+</div>'; }).join('')}</div>
+        <div class="grid">${own.map(c => `<button class="cc ${sel.includes(c.id) ? 'sel' : ''}" data-c="${c.id}">${thumb(c)}<span class="cr r${c.rarity}">${rarName(c.rarity)}</span><span class="ce">${elTag(c.elem)}</span><span class="cn">${esc(c.name)}<br><span class="muted" style="font-size:10px">${esc(roleName(c.role))} · ${fmt(power(c))}</span></span></button>`).join('')}</div>
+        <div class="acts"><button class="btn sub sm" data-x="auto">자동</button><button class="btn sm" data-x="ok">완료</button></div></div>`;
+    };
+    draw();
+    m.onclick = e => {
+      const c = e.target.closest('[data-c],[data-r]');
+      if (c) { const id = c.dataset.c || c.dataset.r; const i = sel.indexOf(id); if (i >= 0) sel.splice(i, 1); else if (sel.length < 4) sel.push(id); sfx('btn'); draw(); return; }
+      const x = e.target.closest('[data-x]'); if (!x) return;
+      if (x.dataset.x === 'auto') { sel.length = 0; sel.push(...own.slice(0, 4).map(c => c.id)); draw(); return; }
+      S.squad = sel; save(); m.hidden = true; m.onclick = null; m.innerHTML = ''; res();
+    };
+  });
+}
+
+// 메신저 재생
+async function playThread(t, c) {
+  const chat = $('#chat'), ch = $('#chch');
+  const lines = parseScript(t.script);
+  const me = playerName(S);
+  let pick = 0, alive = true;
+  const add = (text, mine, who) => { if (!$('#chat')) { alive = false; return; } chat.insertAdjacentHTML('beforeend', `<div class="msg ${mine ? 'me' : ''}">${!mine && who && who !== c?.name ? `<span class="who">${esc(who)}</span>` : ''}${esc(fill(text, S))}</div>`); chat.scrollTop = 1e6; };
+  const replay = S.threads[t.id]?.done;
+  for (const L of lines) {
+    if (!alive || !$('#chat')) return;
+    if (L.cond && L.cond !== pick) continue;
+    if (L.type === 'choice') {
+      const v = await new Promise(r => {
+        ch.innerHTML = L.opts.map((o, i) => `<button data-c="${i + 1}">${esc(fill(o, S))}</button>`).join('');
+        ch.onclick = e => { const b = e.target.closest('[data-c]'); if (b) { sfx('ok'); r(+b.dataset.c); } };
+      });
+      ch.innerHTML = ''; pick = v; add(L.opts[v - 1], true); await sleep(300); continue;
+    }
+    if (L.type === 'say' || L.type === 'nar') {
+      if (!replay) { const ty = document.createElement('div'); ty.className = 'typing'; ty.textContent = `${L.who || ''} 입력 중…`; chat.append(ty); chat.scrollTop = 1e6; await sleep(Math.min(1400, 350 + L.text.length * 22)); ty.remove(); }
+      add(L.text, L.who === me || L.who === T('player'), L.who); sfx('btn');
+      if (replay) await sleep(60);
+    }
+  }
+  if (!$('#chat')) return;
+  if (!S.threads[t.id]?.done) {
+    S.threads[t.id] = { done: true, at: Date.now() }; count('talk');
+    const ups = addAff(t.charId, 20); give({ gems: 30 }, true); save();
+    toast(`💎 30${ups.length ? ` · ${c?.name} 호감도 상승!` : ''}`);
+  }
+  ch.innerHTML = '<button data-go="talk">목록으로</button>';
+}
+
+// 첫 실행: 오프닝 → 이름 → 프롤로그 → 첫 사원 지급
+async function firstRun() {
+  if (G.opening?.lines?.length) await playLines(G.opening.lines);
+  const nm = await new Promise(r => {
+    const m = $('#modal'); m.hidden = false;
+    m.innerHTML = `<div class="mbox"><h3>${esc(T('player'))}님의 이름은?</h3><input type="text" id="nm0" maxlength="12" placeholder="${esc(T('player'))}"><div class="acts"><button class="btn sm" id="nmok">확인</button></div></div>`;
+    $('#nmok').onclick = () => { const v = $('#nm0').value.trim(); m.hidden = true; m.innerHTML = ''; r(v); };
+  });
+  S.name = nm; save();
+  if (G.opening?.prologue) await playStory('프롤로그', G.opening.prologue);
+  const first = G.chars[0];
+  if (first && !owned().length) {
+    addChar(first.id); S.squad = [first.id]; S.lobbyChar = first.id;
+    S.mail.unshift({ id: 'welcome-char', from: '인사팀', title: `${first.name} 배정 안내`, body: `${first.name}이(가) ${playerName(S)}님의 첫 ${T('crew')}으로 배정됐어요.`, reward: null, got: true, read: false, at: Date.now() });
+  }
+  S.seenOpening = true; save();
+  if (first) await modal(`<h3>첫 ${esc(T('crew'))} 배정</h3>${standing(first) ? `<img src="${standing(first)}" style="width:100%;max-height:50vh;object-fit:contain">` : ''}<p style="text-align:center"><b>${esc(first.name)}</b><br><span class="muted">${esc(fill(first.intro || '', S))}</span></p><p class="muted">우편함의 선물로 ${esc(T('gacha'))}도 해 보세요!</p>`);
+}
+
+export { SCREENS };
