@@ -113,8 +113,8 @@ img{user-select:none;-webkit-user-drag:none}
 .viewer img{max-width:100%;max-height:100%;object-fit:contain}
 
 /* gacha */
-.banner{position:relative;border-radius:16px;overflow:hidden;min-height:200px;border:1px solid var(--line);background:linear-gradient(135deg,#1b1530,#0f2a2a);display:flex;align-items:flex-end;padding:14px;margin:8px 0}
-.banner img{position:absolute;right:-10%;bottom:0;height:115%;object-fit:contain;opacity:.95}
+.banner{position:relative;border-radius:16px;overflow:hidden;min-height:240px;border:1px solid var(--line);background:linear-gradient(135deg,#1b1530,#0f2a2a);display:flex;align-items:flex-end;padding:14px;margin:8px 0}
+.banner img{position:absolute;right:0;top:0;height:100%;width:72%;object-fit:cover;object-position:50% 12%;-webkit-mask-image:linear-gradient(to right,transparent,#000 40%);mask-image:linear-gradient(to right,transparent,#000 40%)}
 .banner .bi{position:relative;max-width:62%}
 .banner h2{margin:0 0 4px;font-size:20px;font-weight:900;text-shadow:0 2px 8px #000}
 .bsel{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px}
@@ -244,3 +244,22 @@ input[type=text]{background:rgba(255,255,255,.06);border:1px solid var(--line);b
 
 .vault{background:none;border:0;color:var(--muted,#8a93a6);opacity:.35;font-size:11px;padding:4px 2px;cursor:pointer}
 .vault:active{opacity:.8}
+
+/* 영입 연출: 사원증 카드 */
+.reveal{justify-content:center}
+.idcard{--rc:#6ea8ff;position:relative;width:min(78vw,330px);border-radius:16px;padding:7px;background:linear-gradient(160deg,var(--rc),rgba(255,255,255,.15) 45%,var(--rc));box-shadow:0 0 0 1px rgba(255,255,255,.2),0 0 40px -6px var(--rc),0 20px 50px rgba(0,0,0,.6);animation:cardin .55s cubic-bezier(.2,1.4,.4,1)}
+.idcard.rr3{--rc:#ffcf5a}.idcard.rr2{--rc:#b48cff}.idcard.rr1{--rc:#6ea8ff}
+.idcard>div{background:#0e1320}
+.idh{display:flex;justify-content:space-between;font-size:10px;letter-spacing:.12em;padding:6px 10px;border-radius:10px 10px 0 0;color:var(--rc);font-weight:800;border-bottom:1px solid rgba(255,255,255,.08)}
+.idp{position:relative;aspect-ratio:4/4.4;overflow:hidden}
+.idp img{position:static;width:100%;height:100%;object-fit:cover;object-position:50% 10%;animation:none;margin:0;inset:auto}
+.idp::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,transparent 70%,#0e1320)}
+.idnew{position:absolute;top:8px;right:8px;z-index:1;background:var(--warn);color:#fff;font-size:11px;font-weight:900;padding:2px 8px;border-radius:6px}
+.idn{padding:4px 14px 12px;border-radius:0 0 10px 10px}
+.ids{color:var(--rc);font-size:15px;letter-spacing:2px;text-shadow:0 0 8px var(--rc)}
+.idn b{display:block;font-size:24px;font-weight:900;margin:2px 0 4px}
+.idm{display:flex;justify-content:space-between;font-size:12px;color:var(--tx2)}
+.idbar{height:14px;margin-top:10px;opacity:.35;background:repeating-linear-gradient(90deg,var(--tx) 0 2px,transparent 2px 4px,var(--tx) 4px 5px,transparent 5px 9px)}
+@keyframes cardin{0%{transform:scale(.6) rotateY(90deg);opacity:0}100%{transform:none;opacity:1}}
+.results .cc{border:2px solid var(--rc,#6ea8ff);box-shadow:0 0 12px -3px var(--rc,#6ea8ff)}
+.results .cc.fr3{--rc:#ffcf5a}.results .cc.fr2{--rc:#b48cff}.results .cc.fr1{--rc:#6ea8ff}

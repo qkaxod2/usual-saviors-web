@@ -1,6 +1,6 @@
 // 영입(가챠)
 import { $, esc, sfx, bgm, sleep, toast, confirmBox, modal } from './util.js';
-import { G, T, charById, standing, upper, img, rarName } from './data.js';
+import { G, T, charById, standing, upper, img, rarName, roleName } from './data.js';
 import { S, save, addChar, count, give } from './state.js';
 
 export const COST1 = 160, COST10 = 1600;
@@ -72,15 +72,23 @@ export async function pullShow(res) {
   for (const r of res) {
     if (skip) break;
     if (res.length > 1 && r.c.rarity < 2 && r.kind !== 'new') continue;
-    const u = standing(r.c);
-    ov.innerHTML = `<div class="reveal" id="rv">${u ? `<img src="${u}" alt="">` : ''}
-      <div class="rn"><span class="r${r.c.rarity}">${rarName(r.c.rarity)}</span> ${esc(r.c.name)}</div>
-      <p class="muted" style="position:relative;margin:6px 24px 10px;text-align:center">${esc(r.kind === 'new' ? r.c.intro || '' : r.kind === 'dup' ? '중복 영입 · 잠재 해금' : `최대 중복 · ${T('core')} +2`)}</p>
+    const u = img(r.c.illust?.id) || upper(r.c) || standing(r.c);
+    const stars = '★'.repeat(r.c.rarity) + '☆'.repeat(3 - r.c.rarity);
+    const no = String(r.c.ord ?? 0).padStart(3, '0');
+    ov.innerHTML = `<div class="reveal" id="rv">
+      <div class="idcard rr${r.c.rarity}">
+        <div class="idh"><span>${esc(G.meta.title || '')}</span><span>No.${no}</span></div>
+        <div class="idp">${u ? `<img src="${u}" alt="">` : ''}${r.kind === 'new' ? '<span class="idnew">NEW</span>' : ''}</div>
+        <div class="idn"><div class="ids">${stars}</div><b>${esc(r.c.name)}</b>
+          <div class="idm"><span>${esc(r.c.faction || '')}</span><span>${esc(roleName(r.c.role) || '')}${r.c.elem ? ' · ' + esc(r.c.elem) : ''}</span></div>
+          <div class="idbar"></div></div>
+      </div>
+      <p class="muted" style="position:relative;margin:12px 24px 10px;text-align:center">${esc(r.kind === 'new' ? r.c.intro || '' : r.kind === 'dup' ? '중복 영입 · 잠재 해금' : `최대 중복 · ${T('core')} +2`)}</p>
       ${res.length > 1 ? '<button class="btn sub sm" id="rvSkip" style="position:relative">건너뛰기</button>' : ''}</div>`;
     sfx(r.c.rarity === 3 ? 'ssr' : 'card');
     await new Promise(ok => { $('#rv', ov).onclick = e => { if (e.target.id === 'rvSkip') skip = true; ok(); }; });
   }
-  ov.innerHTML = `<div class="reveal" style="justify-content:center"><div class="results">${res.map(r => `<div class="cc"><img src="${upper(r.c) || standing(r.c) || ''}" alt="">
+  ov.innerHTML = `<div class="reveal" style="justify-content:center"><div class="results">${res.map(r => `<div class="cc fr${r.c.rarity}"><img src="${upper(r.c) || standing(r.c) || ''}" alt="">
       ${r.kind === 'new' ? '<span class="new">NEW</span>' : ''}<span class="cr r${r.c.rarity}" style="${r.kind === 'new' ? 'top:18px' : ''}">${rarName(r.c.rarity)}</span><span class="cn">${esc(r.c.name)}</span></div>`).join('')}</div>
     <button class="btn" id="rvOk" style="position:relative;margin-top:10px">확인</button></div>`;
   await new Promise(ok => $('#rvOk', ov).onclick = ok);

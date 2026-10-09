@@ -131,7 +131,7 @@ const SCREENS = {
     bgm(G.prog?.scene?.gacha || '계약');
     scr().innerHTML = header(T('gacha')) + `<div class="body">
       <div class="bsel">${bs.map(x => `<button class="${x === b ? 'on' : ''}" data-go="recruit:${x.id}">${esc(x.name)}</button>`).join('')}</div>
-      <div class="banner">${face && standing(face) ? `<img src="${standing(face)}" alt="">` : ''}
+      <div class="banner">${face && bannerArt(face) ? `<img src="${bannerArt(face)}" alt="">` : ''}
         <div class="bi"><span class="tag">${b.type === 'pickup' ? '픽업' : b.type === 'pool' ? '한정 풀' : '상시'}</span><h2>${esc(b.name)}</h2>
         <div class="muted">${esc(b.desc || '')}</div>${pu.length ? `<div style="margin-top:6px;font-size:13px">확률 상승: ${pu.map(c => `<b class="r${c.rarity}">${esc(c.name)}</b>`).join(', ')}</div>` : ''}</div></div>
       <div class="card"><div class="row"><span class="grow muted">SSR ${R.ssr}% · SR ${R.sr}% · ${R.pity}회 안에 SSR 확정</span><b>${pity}/${R.pity}</b></div>
@@ -432,6 +432,7 @@ const SCREENS = {
   },
 };
 let TICK = null;
+const bannerArt = c => img(c.illust?.id) || upper(c) || standing(c);
 function chMap(ch) { const key = String(ch.title || '').split(':')[0].trim(); const m = (G.lib || []).find(l => l.kind === 'map' && key && l.name.startsWith(key) && img(l.id)); return m ? `<img src="${img(m.id)}" alt="" style="width:100%;height:150px;object-fit:cover;border-radius:12px;margin:4px 0 6px;border:1px solid var(--line)">` : ''; }
 const CHTAB = {};
 export let DATA_SRC = 'file';
