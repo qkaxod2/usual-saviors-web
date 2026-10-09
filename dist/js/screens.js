@@ -67,7 +67,7 @@ const SCREENS = {
     bgm(G.prog?.scene?.lobby || '로비');
     scr().innerHTML = `<div class="lobby">
       <div class="lbg" style='${bgU ? `background-image:url("${bgU}")` : bgCss(G.prog?.lobbyBg)}'></div>
-      ${c ? `<div class="lch">${poseU ? `<img src="${poseU}" alt="">` : ''}</div><div class="hit h" data-act="touch" data-v="head"></div><div class="hit b" data-act="touch" data-v="body"></div>` : ''}
+      ${c ? `<div class="lch">${poseU ? `<img src="${poseU}" alt="">` : ''}</div><div class="hit h" data-act="touch" data-v="head"></div><div class="hit b" data-act="touch" data-v="body"></div>${c.touch?.chest?.length ? `<div class="hit c" data-act="touch" data-v="chest"${c.touch.chestTop ? ` style="top:${+c.touch.chestTop}%"` : ''}></div>` : ''}<div id="tfx"></div>` : ''}
       <div class="ltop"><div class="top"><h1 style="font-size:14px">${esc(playerName(S))} <span class="muted">· ${esc(G.meta.title || '')}</span></h1>${resBar()}</div></div>
       <div class="lside">
         <button data-go="mail"><i>✉️</i>우편${b.mail ? '<span class="dot"></span>' : ''}</button>
@@ -94,6 +94,18 @@ const SCREENS = {
       touch(part) {
         if (!c) return;
         const o = S.owned[c.id];
+        if (part === 'chest') {
+          // 특수 터치: 연속으로 누를수록 반응이 단계적으로 격해져요 (20초 지나면 초기화)
+          const now = Date.now(), st = (window.__chestT ||= {}), r = st[c.id] && now - st[c.id].t < 20000 ? st[c.id] : { n: 0 };
+          r.n++; r.t = now; st[c.id] = r;
+          const tiers = c.touch.chest, tier = Math.min(r.n, tiers.length) - 1;
+          const im = $('.lobby .lch img'); if (im) { im.classList.remove('flinch', 'turn'); void im.offsetWidth; im.classList.add(tier >= 2 ? 'turn' : 'flinch'); }
+          const fx = $('#tfx'); if (fx) { fx.innerHTML = `<span class="tmark t${tier}">${tier >= 2 ? '💢' : '!'}</span>`; setTimeout(() => { if (fx) fx.innerHTML = ''; }, 900); }
+          sfx(tier >= 2 ? 'lose' : 'hit');
+          say(c.name, pick(tiers[tier]));
+          if (tier < 2 && S.touch.n < 10) { S.touch.n++; addAff(c.id, 5); count('touch'); }
+          save(); return;
+        }
         let pool = (part === 'head' ? c.touch?.head : c.touch?.body) || [];
         if (Math.random() < 0.45 || !pool.length) {
           pool = [...(c.lines || [])];
@@ -179,7 +191,7 @@ const SCREENS = {
         const sec = (title, arr, open) => arr?.length ? `<div class="card ${open ? '' : 'lock'}"><b>${esc(title)}</b>${open ? arr.map(l => `<p class="lines" style="margin:6px 0;font-size:14px;line-height:1.6">「${esc(fill(l, S))}」</p>`).join('') : '<p class="muted">🔒 잠겨 있어요</p>'}</div>` : '';
         return sec('인사', [c.intro].filter(Boolean), true) + sec('일상', c.lines, !!o)
           + Object.keys(c.affLines || {}).map(k => sec(`호감도 ${k}`, c.affLines[k], aff >= +k)).join('')
-          + sec('터치 · 머리', c.touch?.head, !!o) + sec('터치 · 몸', c.touch?.body, !!o)
+          + sec('터치 · 머리', c.touch?.head, !!o) + sec('터치 · 몸', c.touch?.body, !!o) + sec('터치 · 특수', (c.touch?.chest || []).flat(), !!o && aff >= 1)
           + sec('레벨 업', c.lvLines, !!o) + sec('중복 영입', c.dupLines, !!o && o.dup > 0);
       },
       files: () => (c.files || []).map((f, i) => filesOpen(c, f) ? `<div class="card"><b>${esc(T('files'))} ${i + 1}</b><p style="font-size:14px;line-height:1.75;margin:6px 0 0">${esc(fill(f.text, S))}</p></div>`

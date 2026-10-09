@@ -237,3 +237,13 @@ input[type=text]{background:rgba(255,255,255,.06);border:1px solid var(--line);b
 .sw{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--line);font-size:14px}
 .ic{width:16px;height:16px;object-fit:contain;vertical-align:-3px;display:inline-block}
 .stage .no .ic{width:26px;height:26px}
+
+.lobby .hit.c{top:40%;height:16%;left:30%;right:30%;z-index:2}
+.lobby .lch img.flinch{animation:flinch .45s ease-out, breath 5s ease-in-out .45s infinite}
+.lobby .lch img.turn{animation:turnaway 1.6s ease-in-out, breath 5s ease-in-out 1.6s infinite}
+@keyframes flinch{0%{transform:none}20%{transform:translateY(4px) scale(.985) rotate(-1.2deg)}45%{transform:translateX(-5px) rotate(1deg)}70%{transform:translateX(3px)}100%{transform:none}}
+@keyframes turnaway{0%{transform:none}15%{transform:translateX(-8px) rotate(-1.5deg)}30%,75%{transform:translateX(10px) scale(.98);filter:brightness(.85) drop-shadow(0 10px 30px rgba(0,0,0,.5))}100%{transform:none}}
+#tfx{position:absolute;left:0;right:0;top:20%;display:flex;justify-content:center;pointer-events:none;z-index:3}
+.tmark{font-size:38px;font-weight:900;color:#ff6b9a;text-shadow:0 2px 10px rgba(0,0,0,.6);animation:tpop .9s ease-out forwards;margin-left:90px}
+.tmark.t1{color:#ff8a3d}.tmark.t2{font-size:44px}
+@keyframes tpop{0%{transform:scale(.3);opacity:0}25%{transform:scale(1.25);opacity:1}45%{transform:scale(1)}100%{transform:translateY(-14px);opacity:0}}
