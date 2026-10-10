@@ -12,7 +12,22 @@ import { banners, pull, pullShow, COST1, COST10, rates, poolOf } from './gacha.j
 
 const scr = () => $('#screen');
 let current = 'lobby', currentArg = null;
+let lobbyCleanup = () => {};
+function fitLobbyFigure(host, figure, image) {
+  if (!image.naturalWidth || !host.clientHeight) return;
+  const scale = Math.min(host.clientWidth / image.naturalWidth, host.clientHeight / image.naturalHeight);
+  figure.style.width = image.naturalWidth * scale + 'px';
+  figure.style.height = image.naturalHeight * scale + 'px';
+}
+function lobbyHits(c) {
+  const defaults = { head: [25, 3, 50, 28], body: [24, 31, 52, 55], chest: [32, 31, 36, 20] };
+  return ['body', 'head', ...(c.touch?.chest?.length ? ['chest'] : [])].map(part => {
+    const [x,y,w,h] = c.touch?.hitboxes?.[part] || defaults[part];
+    return `<div class="hit ${part}" data-act="touch" data-v="${part}" style="left:${x}%;top:${y}%;width:${w}%;height:${h}%"></div>`;
+  }).join('');
+}
 export function go(name, arg) {
+  lobbyCleanup(); lobbyCleanup = () => {};
   current = name; currentArg = arg;
   const f = SCREENS[name]; if (!f) return;
   scr().onclick = null; scr().innerHTML = '';
@@ -67,7 +82,7 @@ const SCREENS = {
     bgm(G.prog?.scene?.lobby || '로비');
     scr().innerHTML = `<div class="lobby">
       <div class="lbg" style='${bgU ? `background-image:url("${bgU}")` : bgCss(G.prog?.lobbyBg)}'></div>
-      ${c ? `<div class="lch">${poseU ? `<img src="${poseU}" alt="">` : ''}</div><div class="hit h" data-act="touch" data-v="head"></div><div class="hit b" data-act="touch" data-v="body"></div>${c.touch?.chest?.length ? `<div class="hit c" data-act="touch" data-v="chest"${c.touch.chestTop ? ` style="top:${+c.touch.chestTop}%"` : ''}></div>` : ''}` : ''}
+      ${c && poseU ? `<div class="lch"><div class="lfigure"><img src="${poseU}" alt="${esc(c.name)}">${lobbyHits(c)}</div></div>` : ''}
       <div class="ltop"><div class="top"><h1 style="font-size:14px">${esc(playerName(S))} <span class="muted">· ${esc(G.meta.title || '')}</span></h1>${resBar()}</div></div>
       <div class="lside">
         <button data-go="mail"><i>✉️</i>우편${b.mail ? '<span class="dot"></span>' : ''}</button>
@@ -85,14 +100,36 @@ const SCREENS = {
         <button data-go="dispatch"><i>🧭</i>${esc(T('dispatch'))}${b.disp ? '<span class="dot"></span>' : ''}</button>
       </div></div>`;
     let bt = null;
+    const host = $('.lobby .lch'), figure = $('.lobby .lfigure'), portrait = figure?.querySelector('img');
+    let alpha = null;
+    if (portrait) {
+      const ready = () => {
+        fitLobbyFigure(host, figure, portrait);
+        try {
+          const canvas = document.createElement('canvas');
+          canvas.width = portrait.naturalWidth; canvas.height = portrait.naturalHeight;
+          const context = canvas.getContext('2d', { willReadFrequently: true });
+          context.drawImage(portrait, 0, 0);
+          alpha = context.getImageData(0, 0, canvas.width, canvas.height);
+        } catch {}
+      };
+      portrait.addEventListener('load', ready); if (portrait.complete) ready();
+      const observer = new ResizeObserver(() => fitLobbyFigure(host, figure, portrait)); observer.observe(host);
+      lobbyCleanup = () => { observer.disconnect(); portrait.removeEventListener('load', ready); clearTimeout(bt); alpha = null; };
+    }
     const say = (who, text) => {
       clearTimeout(bt);
       $('#bub').innerHTML = `<div class="bubble"><b>${esc(who)}</b>${esc(fill(text, S))}</div>`;
       bt = setTimeout(() => { const x = $('#bub'); if (x) x.innerHTML = ''; }, 5200);
     };
     bind({
-      touch(part) {
+      touch(part, target, event) {
         if (!c) return;
+        if (alpha && portrait) {
+          const r = portrait.getBoundingClientRect();
+          const x = Math.floor((event.clientX-r.left)/r.width*alpha.width), y = Math.floor((event.clientY-r.top)/r.height*alpha.height);
+          if (x < 0 || y < 0 || x >= alpha.width || y >= alpha.height || alpha.data[(y*alpha.width+x)*4+3] < 32) return;
+        }
         const o = S.owned[c.id];
         if (part === 'chest') {
           // 특수 터치: 누를 때마다 대사가 순서대로 나오고 1→2→3단계로 넘어가요 (30초 동안 안 누르면 처음부터). 연출은 놀라는 흔들림만.
@@ -103,7 +140,7 @@ const SCREENS = {
           const tiers = c.touch.chest; let k = r.n++, tier = 0;
           while (tier < tiers.length - 1 && k >= tiers[tier].length) { k -= tiers[tier].length; tier++; }
           const line = tier === tiers.length - 1 ? tiers[tier][k % tiers[tier].length] : tiers[tier][k];
-          const im = $('.lobby .lch img'); if (im) { im.classList.remove('flinch'); void im.offsetWidth; im.classList.add('flinch'); }
+          const im = $('.lobby .lfigure'); if (im) { im.classList.remove('flinch'); void im.offsetWidth; im.classList.add('flinch'); }
           say(c.name, line);
           if (S.touch.n < 10) { S.touch.n++; addAff(c.id, 5); count('touch'); }
           save(); return;

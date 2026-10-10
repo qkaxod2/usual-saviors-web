@@ -263,3 +263,12 @@ input[type=text]{background:rgba(255,255,255,.06);border:1px solid var(--line);b
 @keyframes cardin{0%{transform:scale(.6) rotateY(90deg);opacity:0}100%{transform:none;opacity:1}}
 .results .cc{border:2px solid var(--rc,#6ea8ff);box-shadow:0 0 12px -3px var(--rc,#6ea8ff)}
 .results .cc.fr3{--rc:#ffcf5a}.results .cc.fr2{--rc:#b48cff}.results .cc.fr1{--rc:#6ea8ff}
+
+/* Image and hit regions share one intrinsic-aspect frame, including animation. */
+.lobby .lch{pointer-events:none;height:88%;width:100%}
+.lobby .lfigure{position:relative;flex:none;visibility:visible;animation:breath 5s ease-in-out infinite;transform-origin:50% 100%}
+.lobby .lfigure img{display:block;width:100%;height:100%;max-width:none;object-fit:fill;animation:none;pointer-events:none}
+.lobby .lfigure .hit{position:absolute;right:auto;pointer-events:auto;cursor:pointer;touch-action:manipulation}
+.lobby .lfigure .hit.chest{z-index:2}
+.lobby .lfigure.flinch{animation:flinch .45s ease-out,breath 5s ease-in-out .45s infinite}
+@media(prefers-reduced-motion:reduce){.lobby .lfigure,.lobby .lfigure.flinch{animation:none}}
