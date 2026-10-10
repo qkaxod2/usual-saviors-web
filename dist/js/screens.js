@@ -140,7 +140,7 @@ const SCREENS = {
           const tiers = c.touch.chest; let k = r.n++, tier = 0;
           while (tier < tiers.length - 1 && k >= tiers[tier].length) { k -= tiers[tier].length; tier++; }
           const line = tier === tiers.length - 1 ? tiers[tier][k % tiers[tier].length] : tiers[tier][k];
-          const im = $('.lobby .lfigure'); if (im) { im.classList.remove('flinch', 'hadi-soft', 'hadi-affection'); void im.offsetWidth; im.classList.add(c.id === 'hadi261011' && tier > 0 ? (tier === 1 ? 'hadi-soft' : 'hadi-affection') : 'flinch'); }
+          const im = $('.lobby .lfigure'); if (im) { im.classList.remove('flinch'); void im.offsetWidth; im.classList.add('flinch'); }
           say(c.name, line);
           if (S.touch.n < 10) { S.touch.n++; addAff(c.id, 5); count('touch'); }
           save(); return;

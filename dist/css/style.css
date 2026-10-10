@@ -273,8 +273,3 @@ input[type=text]{background:rgba(255,255,255,.06);border:1px solid var(--line);b
 .lobby .lfigure.flinch{animation:flinch .45s ease-out,breath 5s ease-in-out .45s infinite}
 @media(prefers-reduced-motion:reduce){.lobby .lfigure,.lobby .lfigure.flinch{animation:none}}
 
-.lobby .lfigure.hadi-soft{animation:hadi-soft .55s ease-out,breath 5s ease-in-out .55s infinite}
-.lobby .lfigure.hadi-affection{animation:hadi-affection .8s ease-out,breath 5s ease-in-out .8s infinite}
-@keyframes hadi-soft{0%,100%{transform:none}30%{transform:translateY(3px) rotate(-.5deg)}65%{transform:translateY(-1px) rotate(.4deg)}}
-@keyframes hadi-affection{0%,100%{transform:none}45%{transform:scale(1.018) rotate(.4deg)}}
-@media(prefers-reduced-motion:reduce){.lobby .lfigure.hadi-soft,.lobby .lfigure.hadi-affection{animation:none}}
