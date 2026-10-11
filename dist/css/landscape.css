@@ -100,6 +100,9 @@ html,body{overflow:hidden;background:#16130f}
 .vn-char.up img{height:128%;margin-bottom:-40%}
 .vn-box{left:50%;right:auto;width:820px;transform:translateX(-50%);min-height:128px;bottom:16px;padding:16px 22px 26px}
 .vn-text{font-size:16px}
+/* [효과: 크게] 다음 한 줄: 크고 굵게 외치는 대사 */
+.vn-text.big{font-size:38px;font-weight:900;line-height:1.25;letter-spacing:.02em;animation:vn-big .35s cubic-bezier(.3,1.6,.5,1)}
+@keyframes vn-big{from{transform:scale(.6);opacity:0}}
 .vn-choices{padding:0 110px}
 .vn-prop img{max-height:150px}
 .vn-phone{left:auto;right:36px;transform:none;width:320px;max-height:62%;top:64px}
