@@ -14,6 +14,8 @@ const GUARD_CUT = 0.5;      // 방어 중 받는 피해
 const BREAK_TAKEN = 1.5;    // 흐트러진 적이 받는 피해
 const LOW_HP = 0.5;         // 청소부가 노리는 '끝나 가는' 체력
 const skCost = sk => sk.cost ?? (sk.power >= 3 ? 3 : 2);
+// 배속 단계 → 실제 속도. 3단계는 연출(돌진·배너·흔들림)을 대부분 건너뛰어요
+const SPEED = { 1: 2, 2: 4, 3: 5 };
 
 // 적 행동 패턴. 이름표(ai)가 없으면 보스는 boss, 나머지는 basic이에요.
 // seq를 차례대로 돌고, charge(힘 모으기) 다음 차례는 반드시 smash(강타)예요.
@@ -60,20 +62,21 @@ export function runBattle(opt) {
     E.forEach(e => { if (cnt[e.name] > 1) labelFoe(e); else e.label = e.name; });
     A.forEach(a => { a.label = a.name; });
     const ov = $('#ov'); ov.hidden = false;
-    let auto = !!S.settings.auto, speed = S.settings.speed || 1, over = false, waiting = null, target = null, round = 0, order = [], cur = null, acting = null;
+    let auto = !!S.settings.auto, speed = SPEED[S.settings.speed] ? S.settings.speed : 1, over = false, waiting = null, target = null, round = 0, order = [], cur = null, acting = null;
     let sp = SP_START, called = 0;
     const maxCall = Math.max(0, Math.min(2, A.length - 1)); // 편성이 적으면 무리도 덜 불러요
     const logs = [];
     bgm(opt.music || (E.some(e => e.boss) ? (G.prog?.scene?.boss || '보스전') : (G.prog?.scene?.battle || '전투')));
-    ov.innerHTML = `<div class="battle" style='${bgCss(opt.bg)}'>
+    ov.innerHTML = `<div class="battle ${speed === 3 ? 'fast' : ''}" style='${bgCss(opt.bg)}'>
       <div class="bt-top"><button class="back" id="btRun">후퇴</button><span class="ttl">${esc(opt.title || '')}</span><span class="bt-round" id="btRound"></span>
-        <button class="btn sub sm" id="btSpd">x${speed}</button><button class="btn sub sm ${auto ? 'on' : ''}" id="btAuto">${auto ? '자동 ON' : '자동 OFF'}</button></div>
+        <button class="btn sub sm" id="btSpd">x${SPEED[speed]}</button><button class="btn sub sm ${auto ? 'on' : ''}" id="btAuto">${auto ? '자동 ON' : '자동 OFF'}</button></div>
       <div class="bt-order" id="btOrder"></div>
       <div class="foes" id="foes"></div>
       <div class="bt-banner" id="btBanner"></div>
       <div class="allies" id="allies"></div>
       <div class="bt-side"><div class="blog" id="blog"></div><div class="bt-sp" id="btSp"></div><div class="cmd" id="cmd"></div></div></div>`;
-    const W = ms => sleep(ms / speed);
+    const fast = () => speed === 3;
+    const W = ms => sleep(ms / SPEED[speed] / (fast() ? 1.6 : 1));
     const alive = arr => arr.filter(u => u.hp > 0);
     const nm = (u, cls) => `<b class="${u.side === 'a' ? 'na' : 'ne'} ${cls || ''}">${esc(u.label)}</b>`;
     function log(html) {
@@ -81,6 +84,7 @@ export function runBattle(opt) {
       $('#blog', ov).innerHTML = logs.map((l, i) => `<p class="${i === logs.length - 1 ? 'new' : ''}">${l}</p>`).join('');
     }
     function banner(html, big) {
+      if (fast() && !/승리|패배/.test(html)) return;
       const b = $('#btBanner', ov); b.className = 'bt-banner' + (big ? ' big' : ''); b.innerHTML = html;
       void b.offsetWidth; b.classList.add('on');
     }
@@ -208,7 +212,7 @@ export function runBattle(opt) {
     function popup(el, text, cls) { if (!el) return; const d = document.createElement('div'); d.className = 'dmg ' + (cls || ''); d.innerHTML = text; el.append(d); setTimeout(() => d.remove(), 1300); }
     const foeEl = e => $(`[data-f="${E.indexOf(e)}"]`, ov), allyEl = a => $(`[data-a="${A.indexOf(a)}"]`, ov);
     const unitEl = u => u.side === 'e' ? foeEl(u) : allyEl(u);
-    const flash = (el, cls) => { if (!el) return; el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); };
+    const flash = (el, cls) => { if (!el || fast()) return; el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); };
 
     function dealDmg(src, dst, mult, pierce) {
       const crit = Math.random() < 0.1;
@@ -259,6 +263,7 @@ export function runBattle(opt) {
     }
     async function startAct(u) {
       acting = u; drawAll();
+      if (fast()) return;
       flash(unitEl(u), u.side === 'a' ? 'lunge-up' : 'lunge-down');
       await W(260);
     }
@@ -457,13 +462,13 @@ export function runBattle(opt) {
       sfx(win ? 'win' : 'lose'); acting = null; drawAll();
       banner(`<span class="sk">${win ? '승리!' : '패배…'}</span>`, true);
       log(win ? '<span class="hl">승리!</span>' : '패배…');
-      await sleep(1300);
+      await sleep(fast() ? 700 : 1300);
       ov.hidden = true; ov.innerHTML = '';
       resolve({ win, rounds: round, alive: alive(A).map(a => a.c.id) });
     }
     $('#foes', ov).onclick = e => { const f = e.target.closest('[data-f]'); if (!f) return; const t = E[+f.dataset.f]; if (t.hp > 0) { target = t; drawFoes(); $('#cmd', ov).redraw?.(); sfx('btn'); } };
     $('#btAuto', ov).onclick = e => { auto = !auto; S.settings.auto = auto; save(); e.target.textContent = auto ? '자동 ON' : '자동 OFF'; e.target.classList.toggle('on', auto); if (auto && waiting) waiting(aiCmd(cur)); };
-    $('#btSpd', ov).onclick = e => { speed = speed === 1 ? 2 : speed === 2 ? 3 : 1; S.settings.speed = speed; save(); e.target.textContent = 'x' + speed; };
+    $('#btSpd', ov).onclick = e => { speed = speed === 1 ? 2 : speed === 2 ? 3 : 1; S.settings.speed = speed; save(); e.target.textContent = 'x' + SPEED[speed]; $('.battle', ov).classList.toggle('fast', fast()); if (fast()) hideBanner(); };
     $('#btRun', ov).onclick = async () => { if (await confirmBox('<h3>후퇴할까요?</h3><p class="muted">이번 전투는 패배로 처리돼요.</p>', '후퇴')) { if (waiting) waiting('atk'); end(false); } };
     loop();
   });

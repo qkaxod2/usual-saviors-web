@@ -1,5 +1,5 @@
 // 비주얼 노벨식 스토리 재생기
-import { $, esc, sfx, bgm, sleep } from './util.js';
+import { $, esc, sfx, bgm, sleep, confirmBox } from './util.js';
 import { G, charByName, upper, standing, img, libImg, bgCss, fill, playerName } from './data.js';
 import { S as SAVE } from './state.js';
 
@@ -47,12 +47,12 @@ export function playStory(title, script) {
       <div class="vn-bg" id="vnBg"></div><div class="vn-char dim" id="vnChar"></div>
       <div class="vn-cg" id="vnCG" hidden></div><div class="vn-prop" id="vnProp" hidden></div><div class="vn-flash" id="vnFlash"></div>
       <div class="vn-phone" id="vnPhone" hidden><div class="pt" id="vnPhName"></div><div class="pb" id="vnPhBody"></div></div>
-      <div class="vn-top"><span class="ttl">${esc(title)}</span><button id="vnAuto">자동</button><button id="vnLog">로그</button><button id="vnSkip">건너뛰기</button></div>
+      <div class="vn-top"><span class="ttl">${esc(title)}</span><button id="vnAuto">자동</button><button id="vnFF">빨리 감기</button><button id="vnLog">로그</button><button id="vnSkip">건너뛰기</button></div>
       <div class="vn-place" id="vnPlace" hidden></div>
       <div class="vn-box" id="vnBox"><div class="vn-name" id="vnName"></div><div class="vn-text" id="vnText"></div><div class="vn-choices" id="vnCh"></div><span class="vn-next" id="vnNext" hidden>▼</span></div>
     </div>`;
     ov.hidden = false;
-    const st = { i: 0, pick: 0, typing: false, full: '', timer: null, auto: !!SAVE.settings.autoText, autoT: null, choice: false, phone: false, log: [], ended: false };
+    const st = { i: 0, pick: 0, typing: false, full: '', timer: null, auto: !!SAVE.settings.autoText, ff: false, autoT: null, choice: false, phone: false, log: [], ended: false };
     const el = id => $('#' + id, ov);
     const setBg = n => { const b = el('vnBg'); b.setAttribute('style', bgCss(n)); b.classList.remove('dark'); };
     const first = lines.find(l => l.type === 'cmd' && l.cmd === '배경'); setBg(first ? first.arg : (SAVE && G.prog?.lobbyBg) || '');
@@ -74,11 +74,13 @@ export function playStory(title, script) {
       const t = el('vnText'); t.className = 'vn-text ' + (cls || ''); st.full = text; st.typing = true; el('vnNext').hidden = true;
       let n = 0; const speed = Math.max(8, 60 - (SAVE.settings.text || 28));
       clearInterval(st.timer);
+      if (st.ff) { endType(); return; } // 빨리 감기: 글자를 한 번에
       st.timer = setInterval(() => { n += 1; t.textContent = text.slice(0, n); if (n >= text.length) endType(); }, speed);
     };
     const endType = () => {
       clearInterval(st.timer); st.typing = false; el('vnText').textContent = st.full; el('vnNext').hidden = false;
-      if (st.auto) { clearTimeout(st.autoT); st.autoT = setTimeout(step, 900 + st.full.length * 35); }
+      if (st.ff) { clearTimeout(st.autoT); st.autoT = setTimeout(step, 110); }
+      else if (st.auto) { clearTimeout(st.autoT); st.autoT = setTimeout(step, 900 + st.full.length * 35); }
     };
     const phoneMsg = (who, text, me) => {
       const b = el('vnPhBody'); b.insertAdjacentHTML('beforeend', `<div class="msg ${me ? 'me' : ''}">${who && !me ? `<span class="who">${esc(who)}</span>` : ''}${esc(text)}</div>`); b.scrollTop = 1e6;
@@ -97,8 +99,9 @@ export function playStory(title, script) {
             case '배경': setBg(a); break;
             case '음악': bgm(a); break;
             case '음악끝': bgm(''); break;
-            case '효과음': sfx(a); break;
+            case '효과음': if (!st.ff) sfx(a); break;
             case '효과':
+              if (st.ff && !/암전|크게|큰\s*글씨|외침/.test(a)) break; // 빨리 감기 중엔 흔들림·섬광 생략
               if (/흔들/.test(a)) { const v = el('vn'); v.classList.remove('shake'); void v.offsetWidth; v.classList.add('shake'); }
               else if (/플래시|섬광/.test(a)) { const f = el('vnFlash'); f.classList.remove('go'); void f.offsetWidth; f.classList.add('go'); }
               else if (/암전/.test(a)) el('vnBg').classList.add('dark');
@@ -151,7 +154,17 @@ export function playStory(title, script) {
     el('vn').addEventListener('click', e => { if (e.target.closest('.vn-top') || e.target.closest('.vn-choices') || e.target.closest('.vlog')) return; step(); });
     el('vnAuto').onclick = e => { e.stopPropagation(); st.auto = !st.auto; e.target.classList.toggle('on', st.auto); if (st.auto && !st.typing && !st.choice) step(); };
     el('vnAuto').classList.toggle('on', st.auto);
-    el('vnSkip').onclick = e => { e.stopPropagation(); skipToChoice(); };
+    // 빨리 감기: 글자를 바로 띄우고 빠르게 넘겨요. 선택지에서는 멈춰서 고르게 해요
+    const setFF = on => { st.ff = on; el('vnFF').classList.toggle('on', on); el('vn').classList.toggle('ff', on); if (on && !st.choice) step(); else if (!on) clearTimeout(st.autoT); };
+    el('vnFF').onclick = e => { e.stopPropagation(); setFF(!st.ff); };
+    el('vnSkip').onclick = async e => {
+      e.stopPropagation();
+      const was = st.ff; clearTimeout(st.autoT); st.ff = false;
+      const left = lines.slice(st.i).filter(l => l.type === 'choice').length + (st.choice ? 1 : 0);
+      const ok = await confirmBox(`<h3>남은 이야기를 건너뛸까요?</h3><p class="muted">${left ? `남은 선택지 ${left}개는 첫 번째 답으로 넘어가요. ` : ''}건너뛴 대사는 로그와 기록실에서 다시 볼 수 있어요.</p>`, '건너뛰기');
+      if (!ok) { if (was) setFF(true); return; }
+      skipAll();
+    };
     el('vnLog').onclick = e => {
       e.stopPropagation();
       const d = document.createElement('div'); d.className = 'vlog';
@@ -159,21 +172,18 @@ export function playStory(title, script) {
       d.onclick = ev => { ev.stopPropagation(); d.remove(); };
       el('vn').append(d); d.scrollTop = 1e6;
     };
-    // 건너뛰기: 다음 선택지까지(없으면 끝까지) 명령만 처리하며 넘김
-    const skipToChoice = () => {
-      clearInterval(st.timer); st.typing = false;
+    // 건너뛰기: 끝까지 넘겨요. 선택지는 첫 번째 답을 고른 것으로 하고, 대사는 로그에 남겨요
+    const skipAll = () => {
+      clearInterval(st.timer); clearTimeout(st.autoT); st.typing = false;
+      if (st.choice) { st.choice = false; st.pick = 1; el('vnCh').innerHTML = ''; }
       while (st.i < lines.length) {
-        const L = lines[st.i];
-        if (L.cond && L.cond !== st.pick) { st.i++; continue; }
-        if (L.type === 'choice') { step(); return; }
-        if (L.type === 'cmd' && ['배경', '음악', '음악끝', '톡끝', '소품끝', 'CG끝'].includes(L.cmd)) {
-          if (L.cmd === '배경') setBg(L.arg); if (L.cmd === '음악') bgm(L.arg); if (L.cmd === '톡끝') { st.phone = false; el('vnPhone').hidden = true; }
-          if (L.cmd === '소품끝') el('vnProp').hidden = true; if (L.cmd === 'CG끝') el('vnCG').hidden = true;
-        }
+        const L = lines[st.i++];
+        if (L.cond && L.cond !== st.pick) continue;
+        if (L.type === 'choice') { st.pick = 1; st.log.push({ who: playerName(SAVE), text: fill(L.opts[0], SAVE) }); continue; }
         if (L.type === 'say' || L.type === 'nar') st.log.push({ who: L.who || '', text: fill(L.text, SAVE) });
-        st.i++;
       }
-      finish();
+      const v = el('vn'); v.classList.add('out');
+      setTimeout(finish, 260);
     };
     step();
   });
