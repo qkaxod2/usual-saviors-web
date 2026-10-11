@@ -58,6 +58,7 @@ export function runBattle(opt) {
       const crit = Math.random() < 0.1;
       let d = src.atk * (1 + (src.buf || 0)) * mult * em * (120 / (120 + dst.def)) * rand(.92, 1.08) * (crit ? 1.5 : 1);
       if (dst.side === 'a' && dst.role === 'def') d *= 0.85;
+      if (dst.side === 'e' && dst.buf < 0) d *= 1 - dst.buf * 0.75; // 매료·약화: 받는 피해 증가
       d = Math.max(1, Math.round(d));
       let left = d;
       if (dst.shield) { const s = Math.min(dst.shield, left); dst.shield -= s; left -= s; }
@@ -87,7 +88,7 @@ export function runBattle(opt) {
           for (const x of alive(A)) { x.buf = 0.17 * sk.power; x.bufT = 2; }
           drawAllies(a); for (const x of alive(A)) popup(allyEl(x), '공격↑', 'heal');
         } else if (k === 'debuff') {
-          for (const e of alive(E)) { e.buf = -0.2 * sk.power; e.bufT = 2; popup(foeEl(e), '약화', 'adv'); }
+          for (const e of alive(E)) { e.buf = -0.2 * sk.power; e.bufT = 2; popup(foeEl(e), '매료', 'adv'); }
         } else {
           const e = pickFoe(); const r = dealDmg(a, e, sk.power); drawFoes(); popup(foeEl(e), (r.crit ? '치명 ' : '') + r.d, r.cls);
         }
