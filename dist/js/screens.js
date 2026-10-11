@@ -246,7 +246,7 @@ const SCREENS = {
         : `<div class="card lock"><b>${esc(T('files'))} ${i + 1}</b><p class="muted">🔒 ${f.dup > 1 ? `중복 영입 ${f.dup - 1}회 이상` : '계약 후'} 열려요</p></div>`).join('') || '<p class="muted">기록이 없어요</p>',
       gallery: () => {
         const items = [['일러스트', c.illust, !!o], ['로비', c.pose, !!o], ['상반신', c.upper, !!o], [`${T('limit')} CG`, c.lbcg, !!o && o.limit >= 1]];
-        return `<div class="thumbs" style="flex-wrap:wrap">${items.filter(x => x[1] && img(x[1].id)).map(([n, it, op]) => `<button data-act="${op ? 'view' : ''}" data-v="${it.id}" class="${op ? '' : 'lock'}">${op ? `<img src="${img(it.id)}">` : '<div class="ph" style="height:100%">🔒</div>'}<span>${esc(n)}</span></button>`).join('')}</div>`;
+        return `<div class="thumbs">${items.filter(x => x[1] && img(x[1].id)).map(([n, it, op]) => `<button data-act="${op ? 'view' : ''}" data-v="${it.id}" class="${op ? '' : 'lock'}">${op ? `<img src="${img(it.id)}">` : '<div class="ph" style="height:100%">🔒</div>'}<span>${esc(n)}</span></button>`).join('')}</div>`;
       },
     };
     scr().innerHTML = header(c.name, 'crew') + `<div class="body">
