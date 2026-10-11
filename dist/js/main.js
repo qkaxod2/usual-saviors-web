@@ -3,6 +3,13 @@ import { loadGame, importBackup, G } from './data.js';
 import { load, S, save } from './state.js';
 import { go, setDataSrc } from './screens.js';
 
+// 가로 16:9 화면(960×540)을 창 크기에 맞춰 늘리고 줄여요
+function fitStage() {
+  const k = Math.min(innerWidth / 960, innerHeight / 540);
+  document.documentElement.style.setProperty('--k', k);
+}
+addEventListener('resize', fitStage); fitStage();
+
 async function boot() {
   const src = await loadGame();
   if (!src) return showImport();

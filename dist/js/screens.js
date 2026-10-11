@@ -30,7 +30,7 @@ export function go(name, arg) {
   lobbyCleanup(); lobbyCleanup = () => {};
   current = name; currentArg = arg;
   const f = SCREENS[name]; if (!f) return;
-  scr().onclick = null; scr().innerHTML = '';
+  scr().onclick = null; scr().innerHTML = ''; scr().dataset.s = name;
   f(arg);
   scr().scrollTop = 0;
 }
@@ -57,16 +57,23 @@ const matLine = () => `<div class="res" style="flex-wrap:wrap;margin:4px 0"><spa
 const SCREENS = {
   // ============ 타이틀 ============
   title() {
-    const lobbyC = charById(S.lobbyChar) || owned()[0] || G.chars[0];
-    const bgName = G.prog?.titleBg || G.prog?.lobbyBg;
-    const art = lobbyC && (img(lobbyC.illust?.id));
     bgm(G.prog?.scene?.title || '타이틀');
-    scr().innerHTML = `<div class="title" style='${art ? `background-image:url("${art}")` : bgCss(bgName)}'>
-      ${!art && lobbyC && standing(lobbyC) ? `<div class="tchar"><img src="${standing(lobbyC)}"></div>` : ''}
-      <div class="tn">${esc(G.meta.title || 'Usual Saviors')}</div><div class="ts">${esc(G.meta.sub || '')}</div>
-      <div class="tap">화면을 눌러 시작</div></div>`;
+    const bgStyle = `background-image:url("${TITLE_KEYART}")`;
+    scr().innerHTML = `<div class="tscreen">
+      <div class="t-bg" style='${bgStyle}'></div>
+      <div class="t-glitch" style='${bgStyle}'></div><div class="t-shade"></div>
+      <div class="t-motes">${'<i></i>'.repeat(16)}</div>
+      <div class="t-logo">
+        <div class="t-mark"><img class="t-text" src="img/logo_text.webp" alt="${esc(G.meta.title || 'Usual Saviors')}"><img class="t-halo" src="img/logo_halo.webp" alt=""></div>
+        <div class="t-ko"><span>${esc(G.meta.title || '')}</span></div>
+      </div>
+      <div class="t-tap"><span>TOUCH TO START</span>화면을 눌러 출근하기</div>
+      <div class="t-ver">ver 0.1 · Web</div>
+      <div class="t-copy">오늘도 세상이 무사하다면, 누군가 평소처럼 일했기 때문이다.</div>
+    </div>`;
     scr().onclick = async () => {
-      sfx('ok'); scr().onclick = null;
+      sfx('seal'); scr().onclick = null;
+      $('.tscreen')?.classList.add('go'); await sleep(650);
       if (!S.seenOpening) await firstRun();
       go('lobby');
     };
@@ -81,25 +88,29 @@ const SCREENS = {
     const poseU = c && (img(c.pose?.id) || standing(c));
     bgm(G.prog?.scene?.lobby || '로비');
     scr().innerHTML = `<div class="lobby">
-      <div class="lbg" style='${bgU ? `background-image:url("${bgU}")` : bgCss(G.prog?.lobbyBg)}'></div>
+      ${LOBBY_BG_PLACEHOLDER ? `<div class="lbg lbg-ph"><span>PLACEHOLDER<b>로비 배경</b><small>1920×1080 권장<br>오른쪽 40%는 메뉴 자리</small></span></div>`
+        : `<div class="lbg" style='${bgU ? `background-image:url("${bgU}")` : bgCss(G.prog?.lobbyBg)}'></div>`}
       ${c && poseU ? `<div class="lch"><div class="lfigure"><img src="${poseU}" alt="${esc(c.name)}">${lobbyHits(c)}</div></div>` : ''}
-      <div class="ltop"><div class="top"><h1 style="font-size:14px">${esc(playerName(S))} <span class="muted">· ${esc(G.meta.title || '')}</span></h1>${resBar()}</div></div>
-      <div class="lside">
-        <button data-go="mail"><i>✉️</i>우편${b.mail ? '<span class="dot"></span>' : ''}</button>
-        <button data-go="missions"><i>📋</i>임무${b.mission ? '<span class="dot"></span>' : ''}</button>
-        <button data-go="shop"><i>🛒</i>${esc(G.meta.shop?.name || '상점')}</button>
-        <button data-go="records"><i>📚</i>기록</button>
-        <button data-go="settings"><i>⚙️</i>설정</button>
+      <div class="lsweep"></div><div class="ldust">${'<i></i>'.repeat(14)}</div>
+      <div class="ltop">
+        <div class="lid"><span class="lseal">印</span><div><small>B.E.A.S.T. 림브라운 · 합동접수처 제7분소</small><b>${esc(playerName(S))}${playerName(S) !== T('player') ? ` <em>${esc(T('player'))}</em>` : ''}</b></div></div>
+        <div class="lclock" id="lclock"></div>
+        ${resBar()}
       </div>
+      <nav class="lside">
+        ${[['mail', 'mail', '우편', b.mail], ['missions', 'task', '임무', b.mission], ['shop', 'shop', G.meta.shop?.name || '상점'], ['records', 'book', '기록'], ['settings', 'gear', '설정']]
+          .map(([g, i, n, d]) => `<button data-go="${g}" aria-label="${esc(n)}">${LICON[i]}<span>${esc(n)}</span>${d ? '<span class="dot"></span>' : ''}</button>`).join('')}
+      </nav>
       <div id="bub"></div>
-      <div class="lmenu">
-        <button data-go="ops"><i>⚔️</i>${esc(T('ops'))}</button>
-        <button data-go="crew"><i>👥</i>${esc(T('crew'))}</button>
-        <button class="big" data-go="recruit"><i>✨</i>${esc(T('gacha'))}</button>
-        <button data-go="talk"><i>💬</i>메신저${b.talk ? '<span class="dot"></span>' : ''}</button>
-        <button data-go="dispatch"><i>🧭</i>${esc(T('dispatch'))}${b.disp ? '<span class="dot"></span>' : ''}</button>
-      </div></div>`;
+      <nav class="lmenu">
+        <button class="lm-main" data-go="ops" style="--i:0"><small>OPERATION</small><b>${esc(T('ops'))}</b><span>${esc(nextOp())}</span><i class="lm-go">${LICON.arrow}</i></button>
+        ${[['crew', 'crew', T('crew'), 'STAFF'], ['recruit', 'spark', T('gacha'), 'RECRUIT', '', 'hot'], ['talk', 'chat', '메신저', 'MESSENGER', b.talk], ['dispatch', 'compass', T('dispatch'), 'DISPATCH', b.disp]]
+          .map(([g, i, n, en, d, cls], k) => `<button class="lm-row ${cls || ''}" data-go="${g}" style="--i:${k + 1}"><em>0${k + 2}</em>${LICON[i]}<b>${esc(n)}</b><small>${en}</small>${d ? '<span class="dot"></span>' : ''}${cls === 'hot' ? '<span class="lm-tag">모집 중</span>' : ''}</button>`).join('')}
+      </nav></div>`;
     let bt = null;
+    const clock = () => { const el = $('#lclock'); if (!el) return; const d = new Date(), W = '일월화수목금토';
+      el.innerHTML = `<b>${String(d.getHours()).padStart(2, '0')}<i>:</i>${String(d.getMinutes()).padStart(2, '0')}</b><span>${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')} (${W[d.getDay()]}) · 근무 중</span>`; };
+    clock(); const ck = setInterval(clock, 10000); lobbyCleanup = () => clearInterval(ck);
     const host = $('.lobby .lch'), figure = $('.lobby .lfigure'), portrait = figure?.querySelector('img');
     let alpha = null;
     if (portrait) {
@@ -115,7 +126,7 @@ const SCREENS = {
       };
       portrait.addEventListener('load', ready); if (portrait.complete) ready();
       const observer = new ResizeObserver(() => fitLobbyFigure(host, figure, portrait)); observer.observe(host);
-      lobbyCleanup = () => { observer.disconnect(); portrait.removeEventListener('load', ready); clearTimeout(bt); alpha = null; };
+      lobbyCleanup = () => { clearInterval(ck); observer.disconnect(); portrait.removeEventListener('load', ready); clearTimeout(bt); alpha = null; };
     }
     const say = (who, text) => {
       clearTimeout(bt);
@@ -471,7 +482,28 @@ const SCREENS = {
 let TICK = null;
 const bannerArt = c => img(c.illust?.id) || upper(c) || standing(c);
 function chMap(ch) { const key = String(ch.title || '').split(':')[0].trim(); const m = (G.lib || []).find(l => l.kind === 'map' && key && l.name.startsWith(key) && img(l.id)); return m ? `<img src="${img(m.id)}" alt="" style="width:100%;height:150px;object-fit:cover;border-radius:12px;margin:4px 0 6px;border:1px solid var(--line)">` : ''; }
+// 로비 배경은 새로 그릴 예정이라, 그 전까지는 자리 표시만 보여요. 이미지가 생기면 false로 바꿔요.
+const LOBBY_BG_PLACEHOLDER = true;
+// 타이틀 키아트: 해 질 녘 거리의 클레이·리베르·에리얼 (NovelAI V5, 위쪽 가운데는 로고 자리)
+const TITLE_KEYART = 'img/title_keyart.webp';
 const CHTAB = {};
+function nextOp() {
+  const n = allStages().find(x => !S.cleared[x.s.id] && stageOpen(x.s.id));
+  return n ? n.s.title : '모든 작전 완료';
+}
+const svg = d => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+const LICON = {
+  mail: svg('<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3.5 6.5 8.5 6 8.5-6"/>'),
+  task: svg('<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1M8.5 10.5l2 2 4-4M8.5 16h7"/>'),
+  shop: svg('<path d="M4 9h16l-1.2 10.2a2 2 0 0 1-2 1.8H7.2a2 2 0 0 1-2-1.8z"/><path d="M8.5 9V7a3.5 3.5 0 0 1 7 0v2"/>'),
+  book: svg('<path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z"/><path d="M4 20.5A2.5 2.5 0 0 0 6.5 23H20v-5"/>'),
+  gear: svg('<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>'),
+  crew: svg('<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14.5a6.5 6.5 0 0 1 3.5 5.5"/>'),
+  spark: svg('<path d="M12 3v4M12 17v4M3 12h4M17 12h4"/><path d="m12 8 1.2 2.8L16 12l-2.8 1.2L12 16l-1.2-2.8L8 12l2.8-1.2z"/>'),
+  chat: svg('<path d="M20 12a8 8 0 0 1-11.6 7.1L4 20l.9-4.1A8 8 0 1 1 20 12z"/><path d="M8.5 12h.01M12 12h.01M15.5 12h.01"/>'),
+  compass: svg('<circle cx="12" cy="12" r="9"/><path d="m15.5 8.5-2 5-5 2 2-5z"/>'),
+  arrow: svg('<path d="M5 12h14M13 6l6 6-6 6"/>'),
+};
 export let DATA_SRC = 'file';
 export function setDataSrc(s) { DATA_SRC = s; }
 
@@ -607,7 +639,7 @@ async function firstRun() {
     S.mail.unshift({ id: 'welcome-char', from: '인사팀', title: `${first.name} 배정 안내`, body: `${first.name}이(가) ${playerName(S)}님의 첫 ${T('crew')}으로 배정됐어요.`, reward: null, got: true, read: false, at: Date.now() });
   }
   S.seenOpening = true; save();
-  if (first) await modal(`<h3>첫 ${esc(T('crew'))} 배정</h3>${standing(first) ? `<img src="${standing(first)}" style="width:100%;max-height:50vh;object-fit:contain">` : ''}<p style="text-align:center"><b>${esc(first.name)}</b><br><span class="muted">${esc(fill(first.intro || '', S))}</span></p><p class="muted">우편함의 선물로 ${esc(T('gacha'))}도 해 보세요!</p>`);
+  if (first) await modal(`<h3>첫 ${esc(T('crew'))} 배정</h3>${standing(first) ? `<img src="${standing(first)}" style="width:100%;max-height:260px;object-fit:contain">` : ''}<p style="text-align:center"><b>${esc(first.name)}</b><br><span class="muted">${esc(fill(first.intro || '', S))}</span></p><p class="muted">우편함의 선물로 ${esc(T('gacha'))}도 해 보세요!</p>`);
 }
 
 export { SCREENS };

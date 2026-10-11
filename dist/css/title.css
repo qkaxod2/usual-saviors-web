@@ -1,0 +1,92 @@
+/* =========================================================
+   타이틀: 공식 로고(USUAL SAVIORS + 금빛 헤일로) 중심
+   참고: 키아트 전면 + 로고 가운데 + 아래 '터치해서 시작' + 구석의 버전 표기
+   (블루 아카이브, 명일방주, 리버스: 1999 같은 모바일 게임 타이틀의 공통 구성)
+   ========================================================= */
+
+.tscreen{--ease:cubic-bezier(.22,1,.36,1);--ivory:#f4efe4;--gold:#c9a24a;
+  position:absolute;inset:0;overflow:hidden;background:#0b0a09;cursor:pointer;color:var(--ivory)}
+
+/* 키아트: 천천히 다가오는 카메라 */
+/* 키아트(1216×832): 위쪽 가운데 하늘이 로고 자리. 16:9로 자를 때 머리와 하늘이 남도록 위쪽을 조금 더 남긴다 */
+.t-bg,.t-glitch{position:absolute;inset:-3%;background-size:cover;background-position:50% 32%}
+.t-bg{animation:t-in 2.4s var(--ease) both,t-kb 28s ease-in-out 2.4s infinite alternate}
+@keyframes t-in{from{opacity:0;transform:scale(1.1);filter:blur(6px)}}
+@keyframes t-kb{to{transform:scale(1.06) translate(-1%,-.8%)}}
+
+/* 이면의 흔적: 가끔 가로 띠가 어긋나며 푸르게 번진다 */
+.t-glitch{opacity:0;mix-blend-mode:screen;filter:hue-rotate(170deg) saturate(2.4) brightness(1.1);animation:t-glitch 8s steps(1) infinite 4s}
+@keyframes t-glitch{
+  0%,100%{opacity:0;clip-path:inset(0 0 100% 0)}
+  70%{opacity:.7;clip-path:inset(40% 0 53% 0);transform:translateX(14px)}
+  71%{opacity:.55;clip-path:inset(63% 0 31% 0);transform:translateX(-10px)}
+  72%{opacity:0;clip-path:inset(0 0 100% 0);transform:none}
+}
+
+/* 밝은 하늘 위 아이보리 로고가 읽히도록 로고 뒤를 어둡게, 아래도 안내 문구용으로 어둡게 */
+.t-shade{position:absolute;inset:0;background:
+  radial-gradient(ellipse 40% 24% at 50% 27%,rgba(11,10,9,.58),rgba(11,10,9,0) 72%),
+  linear-gradient(0deg,rgba(11,10,9,.85),rgba(11,10,9,0) 38%),
+  linear-gradient(180deg,rgba(11,10,9,.45),rgba(11,10,9,0) 25%)}
+
+/* 금빛 입자: 헤일로에서 흩어지는 빛 */
+.t-motes{position:absolute;inset:0;pointer-events:none}
+.t-motes i{position:absolute;bottom:-10px;width:3px;height:3px;border-radius:50%;background:#f1d68e;box-shadow:0 0 8px 1px rgba(241,214,142,.8);
+  opacity:0;animation:t-mote 12s linear infinite}
+.t-motes i:nth-child(odd){width:2px;height:2px}
+.t-motes i:nth-child(1){left:6%;animation-delay:0s}.t-motes i:nth-child(2){left:13%;animation-delay:-3s;animation-duration:15s}
+.t-motes i:nth-child(3){left:21%;animation-delay:-7s}.t-motes i:nth-child(4){left:28%;animation-delay:-1.5s;animation-duration:14s}
+.t-motes i:nth-child(5){left:35%;animation-delay:-9s}.t-motes i:nth-child(6){left:42%;animation-delay:-5s;animation-duration:16s}
+.t-motes i:nth-child(7){left:49%;animation-delay:-11s}.t-motes i:nth-child(8){left:55%;animation-delay:-2.5s;animation-duration:13s}
+.t-motes i:nth-child(9){left:61%;animation-delay:-6s}.t-motes i:nth-child(10){left:67%;animation-delay:-10s;animation-duration:15s}
+.t-motes i:nth-child(11){left:73%;animation-delay:-4s}.t-motes i:nth-child(12){left:79%;animation-delay:-8s;animation-duration:14s}
+.t-motes i:nth-child(13){left:85%;animation-delay:-1s}.t-motes i:nth-child(14){left:91%;animation-delay:-6.5s;animation-duration:16s}
+.t-motes i:nth-child(15){left:96%;animation-delay:-3.5s}.t-motes i:nth-child(16){left:3%;animation-delay:-9.5s;animation-duration:13s}
+@keyframes t-mote{0%{opacity:0;transform:translate(0,0)}10%{opacity:.9}80%{opacity:.5}100%{opacity:0;transform:translate(30px,-420px)}}
+
+/* ---------- 로고 ---------- */
+.t-logo{position:absolute;left:50%;top:26%;width:500px;transform:translate(-50%,-50%);text-align:center}
+.t-mark{position:relative;aspect-ratio:1850/235}
+.t-mark img{position:absolute;inset:0;width:100%;height:100%}
+.t-text{filter:drop-shadow(0 2px 18px rgba(0,0,0,.7));animation:t-text 1.8s var(--ease) both .9s}
+@keyframes t-text{from{opacity:0;letter-spacing:.2em;transform:translateY(10px);filter:blur(8px) drop-shadow(0 2px 18px rgba(0,0,0,.7))}}
+/* 헤일로: 위에서 내려와 S 위에 내려앉고, 계속 은은하게 숨 쉰다 */
+.t-halo{filter:drop-shadow(0 0 6px rgba(241,214,142,.9)) drop-shadow(0 0 18px rgba(201,162,74,.6));
+  animation:t-halo 1.4s cubic-bezier(.3,1.4,.5,1) both 2.1s,t-halo-glow 3.6s ease-in-out 3.5s infinite}
+@keyframes t-halo{from{opacity:0;transform:translateY(-26px) scale(.7)}}
+@keyframes t-halo-glow{50%{transform:translateY(-3px);filter:drop-shadow(0 0 9px rgba(241,214,142,1)) drop-shadow(0 0 28px rgba(201,162,74,.8))}}
+/* 헤일로가 내려앉는 순간의 빛 */
+.t-mark::after{content:"";position:absolute;left:50.3%;top:18%;width:120px;height:120px;margin:-60px 0 0 -60px;border-radius:50%;
+  background:radial-gradient(circle,rgba(255,236,180,.85),rgba(255,236,180,0) 60%);opacity:0;animation:t-flare 1.2s ease-out 2.9s}
+@keyframes t-flare{0%{opacity:0;transform:scale(.3)}30%{opacity:1}100%{opacity:0;transform:scale(2.2)}}
+
+.t-ko{display:flex;align-items:center;justify-content:center;gap:14px;margin-top:16px;animation:t-fade 1.2s var(--ease) both 2.6s}
+.t-ko::before,.t-ko::after{content:"";height:1px;width:70px;background:linear-gradient(90deg,transparent,var(--gold))}
+.t-ko::after{transform:scaleX(-1)}
+.t-ko span{font:700 15px var(--serif);letter-spacing:.55em;margin-right:-.55em;color:var(--ivory);text-shadow:0 1px 10px rgba(0,0,0,.8)}
+
+/* ---------- 아래쪽 ---------- */
+.t-tap{position:absolute;left:50%;bottom:62px;transform:translateX(-50%);text-align:center;font:500 14px "Noto Sans KR",sans-serif;letter-spacing:.2em;
+  color:var(--ivory);text-shadow:0 2px 10px rgba(0,0,0,.8);animation:t-fade 1s var(--ease) both 3.2s}
+.t-tap span{display:block;font:500 10px "Noto Sans KR",sans-serif;letter-spacing:.5em;margin-right:-.5em;color:var(--gold);margin-bottom:6px}
+.t-tap::after{content:"";display:block;width:180px;height:1px;margin:10px auto 0;background:linear-gradient(90deg,transparent,var(--ivory),transparent);
+  animation:t-line 2.6s ease-in-out infinite 4.2s}
+@keyframes t-line{0%,100%{transform:scaleX(.3);opacity:.35}50%{transform:scaleX(1);opacity:1}}
+.t-ver,.t-copy{position:absolute;bottom:16px;font-size:10px;letter-spacing:.08em;color:rgba(244,239,228,.45);animation:t-fade 1s var(--ease) both 3.4s}
+.t-ver{left:20px}
+.t-copy{right:20px}
+@keyframes t-fade{from{opacity:0;transform:translateY(6px)}}
+.t-tap{animation-name:t-fade-c}
+@keyframes t-fade-c{from{opacity:0;transform:translate(-50%,6px)}}
+
+/* ---------- 눌렀을 때: 헤일로가 번쩍이고 화면이 밝아진다 ---------- */
+.tscreen.go .t-halo{animation:t-go-halo .6s ease-out both}
+@keyframes t-go-halo{to{filter:drop-shadow(0 0 16px #fff) drop-shadow(0 0 50px rgba(241,214,142,1));transform:scale(1.15)}}
+.tscreen.go .t-tap,.tscreen.go .t-ver,.tscreen.go .t-copy{transition:opacity .3s;opacity:0}
+.tscreen.go::after{content:"";position:absolute;inset:0;background:#fbf7ef;animation:t-white .65s ease-in both}
+@keyframes t-white{from{opacity:0}}
+
+@media(prefers-reduced-motion:reduce){
+  .t-bg,.t-text,.t-halo,.t-ko,.t-tap,.t-tap::after,.t-ver,.t-copy,.t-mark::after{animation:none}
+  .t-glitch,.t-motes{display:none}
+}

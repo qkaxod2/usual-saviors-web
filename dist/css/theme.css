@@ -1,0 +1,161 @@
+/* =========================================================
+   앞면 / 뒷면 테마
+   앞면: 평소의 사무소. 종이, 잉크, 빨간 인장.
+   뒷면: 이형과 마주한 이면. 먹빛 어둠과 인장의 푸른빛.
+   style.css 다음에 불러와서 덮어쓴다.
+   ========================================================= */
+
+/* ---------- 앞면 (기본) ---------- */
+:root{
+  --bg:#f3eee4; --bg2:#fbf8f2; --panel:#fffdf8; --line:rgba(60,48,36,.14);
+  --tx:#2b2620; --tx2:#7a6f62; --ac:#c8402f; --ac2:#2f4a6d; --warn:#c8402f; --gold:#a8741a;
+  --ssr:#c8921a; --sr:#8a5cc8; --r:#3f78c0;
+  --ink:#2b2620; --paper:#fffdf8; --stamp:#c8402f; --navy:#2f4a6d;
+  --shadow:0 1px 0 rgba(60,48,36,.06),0 4px 14px -6px rgba(60,48,36,.25);
+  --serif:"Noto Serif KR","Noto Sans KR",serif;
+}
+html,body{background:#d9d2c5}
+#app{background:var(--bg);background-image:
+  linear-gradient(rgba(60,48,36,.035) 1px,transparent 1px);background-size:100% 28px}
+
+/* 상단 바: 서류철 머리 */
+.top{background:linear-gradient(180deg,var(--bg) 70%,rgba(243,238,228,0));}
+.top h1{font-family:var(--serif);font-weight:900;color:var(--ink)}
+.back{border-color:var(--line);background:var(--paper);box-shadow:var(--shadow)}
+.res span{background:var(--paper);border-color:var(--line);box-shadow:var(--shadow);color:var(--tx)}
+.res b{color:var(--ink)}
+
+/* 버튼: 주 버튼은 인장 빨강, 보조는 종이 */
+.btn{background:var(--stamp);color:#fff;border-radius:10px;box-shadow:0 2px 0 #8f2a1f;white-space:nowrap}
+.btn:active{transform:translateY(1px);box-shadow:0 1px 0 #8f2a1f}
+.btn.sub{background:var(--paper);color:var(--ink);border:1px solid var(--line);box-shadow:var(--shadow)}
+.btn:disabled{opacity:1;background:transparent;color:var(--tx2);border:1px dashed var(--line);box-shadow:none}
+
+/* 카드: 클립으로 묶인 서류 */
+.card,.li,.stage,.thread,.mbox{background:var(--paper);border:1px solid var(--line);box-shadow:var(--shadow)}
+.card{border-radius:6px;border-top:3px solid var(--navy)}
+.li,.stage,.thread{border-radius:8px}
+.mbox{border-radius:10px}
+.muted,.li .d{color:var(--tx2)}
+.tag{border-color:var(--line);color:var(--tx2)}
+.rw{color:var(--gold)}
+.bar{background:rgba(60,48,36,.1)}
+.bar i{background:var(--navy)}
+input[type=text]{background:var(--bg2);border-color:var(--line);color:var(--tx)}
+.sw{border-color:var(--line)}
+
+/* 탭: 서류철 인덱스 */
+.tabs{background:none;border-bottom:2px solid var(--navy);border-radius:0;padding:0;gap:2px}
+.tabs button{border-radius:8px 8px 0 0;background:rgba(60,48,36,.06);color:var(--tx2);padding:8px 0}
+.tabs button.on{background:var(--navy);color:#fff;font-weight:700}
+.bsel button{background:var(--paper);border-color:var(--line);box-shadow:var(--shadow)}
+.bsel button.on{border-color:var(--stamp);color:var(--stamp);font-weight:700}
+.bsel{-webkit-mask-image:linear-gradient(90deg,#000 85%,transparent);mask-image:linear-gradient(90deg,#000 85%,transparent)}
+
+/* 출격 스테이지: 결재 번호 */
+.stage .no{color:var(--stamp);font-family:var(--serif)}
+.stage.done .no::after{content:" ✓";color:var(--navy)}
+.stage.lockd{opacity:.5;filter:grayscale(1)}
+
+/* 사원 카드: 사원증 */
+.cc{background:#e8e1d4;border:1px solid var(--line);border-radius:8px;box-shadow:var(--shadow)}
+.cc .cn{background:linear-gradient(0deg,rgba(255,253,248,.97) 55%,transparent);color:var(--ink)}
+.cc .lv{color:var(--navy);font-weight:700}
+.cc.off img{filter:grayscale(1) contrast(.7) brightness(1.15) sepia(.15);opacity:.55}
+.cc.sel{outline-color:var(--stamp)}
+.ch-hero{background:radial-gradient(ellipse at 50% 85%,rgba(47,74,109,.18),transparent 60%)}
+.stats b{color:var(--navy)}
+.dot{background:var(--stamp);box-shadow:0 0 0 2px var(--paper)}
+.pass button{background:var(--paper);border-color:var(--line)}
+.pass button.ok{border-color:var(--stamp);color:var(--stamp)}
+
+/* 메신저: 업무용 메신저 느낌 */
+.msg{background:var(--paper);border:1px solid var(--line);color:var(--tx)}
+.msg.me{background:#e6edf6;border-color:rgba(47,74,109,.3)}
+.msg .who{color:var(--navy)}
+.chat-ch button{background:var(--paper);border:1px solid var(--navy);color:var(--ink)}
+.av{background:#e8e1d4}
+
+/* 로비: 사무소 책상 위 */
+
+/* 스토리(앞면): 종이 대사창 */
+.vn-box{background:rgba(255,253,248,.96);border:1px solid var(--line);border-radius:6px;box-shadow:0 10px 30px -10px rgba(0,0,0,.5);color:var(--ink)}
+.vn-name{color:#fff;background:var(--navy);padding:2px 10px;border-radius:3px;font-size:13px;position:absolute;top:-12px;left:14px}
+.vn-text{padding-top:6px}
+.vn-text.nar{color:#5c5348}
+.vn-next{color:var(--stamp)}
+.vn-choices button{background:rgba(255,253,248,.97);border:1px solid var(--navy);border-left:4px solid var(--stamp);border-radius:6px;color:var(--ink)}
+.vn-top button{background:rgba(255,253,248,.85);color:var(--ink);border-color:var(--line)}
+.vn-top .ttl{color:#fff;text-shadow:0 1px 3px #000}
+.vn-place{background:var(--paper);color:var(--ink);border-left-color:var(--stamp)}
+/* 소품은 얼굴을 가리지 않도록 위쪽에 작게 */
+.vn-prop{top:calc(54px + var(--safe-t));background:var(--paper);color:var(--ink);border-radius:4px;padding:10px 14px;box-shadow:0 8px 24px -8px rgba(0,0,0,.5);transform:translateX(-50%) rotate(-1.5deg)}
+.vn-prop img{max-height:22vh}
+.vn-phone{background:#f7f4ee;border-color:#c9c0b2}
+.vn-phone .pt{background:var(--navy);color:#fff}
+.vlog{background:rgba(243,238,228,.97);color:var(--ink)}
+.vlog b{color:var(--navy)}
+
+/* 토스트 */
+#toast .t{background:var(--ink);color:var(--paper);border:0}
+
+/* ---------- 뒷면: 전투, 영입 연출 ---------- */
+.battle,.pull,.reveal,.vn.back{
+  --bg:#07080d; --panel:rgba(14,18,30,.8); --line:rgba(120,190,255,.18);
+  --tx:#e6ecf7; --tx2:#8d9ab3; --ac:#6fd3ff; --warn:#ff4d6d; --gold:#ffd166;
+  color:var(--tx);
+}
+.battle::before{background:
+  radial-gradient(ellipse at 50% 35%,rgba(111,211,255,.10),transparent 60%),
+  linear-gradient(180deg,rgba(4,5,9,.75),rgba(4,5,9,.45) 40%,rgba(4,5,9,.92))}
+/* 이면이 '깨진' 느낌: 가는 주사선과 모자이크 노이즈 */
+.battle::after{content:"";position:absolute;inset:0;pointer-events:none;opacity:.5;background:
+  repeating-linear-gradient(0deg,rgba(255,255,255,.025) 0 1px,transparent 1px 3px)}
+.battle .back,.battle .btn.sub{background:rgba(14,18,30,.7);color:var(--tx);border:1px solid var(--line);box-shadow:none}
+.battle .btn.sub.on{color:var(--ac);border-color:var(--ac)}
+.battle .btn{background:linear-gradient(180deg,#1b2a44,#121b2e);color:var(--tx);border:1px solid var(--line);box-shadow:none;border-radius:10px}
+.battle .btn:not(:disabled):hover{border-color:var(--ac)}
+.battle .btn.skill,.battle .cmd .btn:last-child{background:linear-gradient(180deg,rgba(111,211,255,.28),rgba(111,211,255,.10));border-color:var(--ac);color:#fff}
+.battle .btn:disabled{background:rgba(14,18,30,.5);border:1px dashed var(--line);color:var(--tx2)}
+.battle .bt-top .ttl{font-family:var(--serif);letter-spacing:.05em}
+.foes{flex:1.3}
+.foe{width:150px}
+.foe .fi{height:150px;background:radial-gradient(circle,rgba(255,77,109,.22),transparent 68%)}
+.foe.boss .fi{height:210px}
+.foe.boss{width:210px}
+.foe .fn{color:var(--tx);font-weight:700}
+.foe.tgt .fi{outline:none;box-shadow:0 0 0 2px var(--warn),0 0 24px rgba(255,77,109,.5);border-radius:50%}
+.foe .bar i{background:var(--warn)}
+.blog{color:var(--tx2);font-size:13px;height:44px}
+.allies{gap:8px;padding:8px 10px}
+.ally{background:#10141f;border:2px solid rgba(120,190,255,.15);border-radius:8px}
+.ally .an{font-size:11px;background:rgba(4,5,9,.6);padding:1px 5px;border-radius:3px}
+.ally .bar i{background:#5ee0a0}
+.ally.act{border-color:var(--ac);box-shadow:0 0 18px rgba(111,211,255,.55);transform:translateY(-4px)}
+.ally{transition:transform .2s}
+.dmg{text-shadow:0 2px 0 #000,0 0 10px var(--warn)}
+
+/* 영입 연출 배경 */
+.pull{background:radial-gradient(circle at 50% 45%,#0f1a33,#04050a 70%)}
+.reveal{background:radial-gradient(circle at 50% 40%,rgba(111,211,255,.08),#04050a 75%)}
+.seal{border-color:var(--ac);box-shadow:0 0 40px rgba(111,211,255,.45),inset 0 0 40px rgba(111,211,255,.3)}
+.seal::before,.seal::after{border-color:rgba(111,211,255,.6)}
+
+/* 앞면 → 뒷면 넘어갈 때: 종이가 찢기듯 */
+.battle{animation:toback .55s ease-out}
+@keyframes toback{
+  0%{clip-path:polygon(0 48%,100% 52%,100% 52%,0 48%);filter:brightness(2)}
+  60%{clip-path:polygon(0 0,100% 0,100% 100%,0 100%);filter:brightness(1.2)}
+  100%{clip-path:polygon(0 0,100% 0,100% 100%,0 100%);filter:none}
+}
+@media(prefers-reduced-motion:reduce){.battle{animation:none}}
+
+/* 사진·그림 위 글자는 흰색 유지 */
+.title{color:#fff}
+.title .tn{font-family:var(--serif);color:#fff;text-shadow:0 2px 14px rgba(0,0,0,.6)}
+.title .ts{color:#f2d7cf}
+.title .tap{color:rgba(255,255,255,.8)}
+.banner{color:#fff;border-radius:8px}
+.banner h2{font-family:var(--serif);color:#fff}
+.banner .muted,.banner .tag{color:rgba(255,255,255,.8);border-color:rgba(255,255,255,.3)}
+.cc .cr{background:var(--paper);padding:0 5px;border-radius:3px;text-shadow:none}
