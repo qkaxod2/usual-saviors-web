@@ -30,7 +30,7 @@ export function go(name, arg) {
   lobbyCleanup(); lobbyCleanup = () => {};
   current = name; currentArg = arg;
   const f = SCREENS[name]; if (!f) return;
-  scr().onclick = null; scr().innerHTML = '';
+  scr().onclick = null; scr().innerHTML = ''; scr().dataset.s = name;
   f(arg);
   scr().scrollTop = 0;
 }
@@ -607,7 +607,7 @@ async function firstRun() {
     S.mail.unshift({ id: 'welcome-char', from: '인사팀', title: `${first.name} 배정 안내`, body: `${first.name}이(가) ${playerName(S)}님의 첫 ${T('crew')}으로 배정됐어요.`, reward: null, got: true, read: false, at: Date.now() });
   }
   S.seenOpening = true; save();
-  if (first) await modal(`<h3>첫 ${esc(T('crew'))} 배정</h3>${standing(first) ? `<img src="${standing(first)}" style="width:100%;max-height:50vh;object-fit:contain">` : ''}<p style="text-align:center"><b>${esc(first.name)}</b><br><span class="muted">${esc(fill(first.intro || '', S))}</span></p><p class="muted">우편함의 선물로 ${esc(T('gacha'))}도 해 보세요!</p>`);
+  if (first) await modal(`<h3>첫 ${esc(T('crew'))} 배정</h3>${standing(first) ? `<img src="${standing(first)}" style="width:100%;max-height:260px;object-fit:contain">` : ''}<p style="text-align:center"><b>${esc(first.name)}</b><br><span class="muted">${esc(fill(first.intro || '', S))}</span></p><p class="muted">우편함의 선물로 ${esc(T('gacha'))}도 해 보세요!</p>`);
 }
 
 export { SCREENS };
