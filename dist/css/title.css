@@ -8,7 +8,7 @@
   position:absolute;inset:0;overflow:hidden;background:#0b0a09;cursor:pointer;color:var(--ivory)}
 
 /* 키아트: 천천히 다가오는 카메라 */
-/* 키아트(1216×832): 위쪽 가운데 하늘이 로고 자리. 16:9로 자를 때 머리와 하늘이 남도록 위쪽을 조금 더 남긴다 */
+/* 키아트(2432×1664): 위쪽 가운데 하늘이 로고 자리. 16:9로 자를 때 머리와 하늘이 남도록 위쪽을 조금 더 남긴다 */
 .t-bg,.t-glitch{position:absolute;inset:-3%;background-size:cover;background-position:50% 32%}
 .t-bg{animation:t-in 2.4s var(--ease) both,t-kb 28s ease-in-out 2.4s infinite alternate}
 @keyframes t-in{from{opacity:0;transform:scale(1.1);filter:blur(6px)}}
