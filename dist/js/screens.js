@@ -304,30 +304,31 @@ const SCREENS = {
         const first = !S.cleared[s.id];
         // 적이 없는 스테이지는 스토리만 읽고 끝나요
         if (!s.enemies.length) {
-          const r = await modal(`<h3>${esc(s.title)}</h3><p class="muted">${esc(ch.title)}</p><p style="margin:10px 0 0">${first ? `첫 열람 보상: ${ic('gems')} ${s.reward}` : '이미 읽은 이야기예요.'}</p>`,
+          const r = await modal(`<h3>${esc(s.title)}</h3><p class="muted">${esc(ch.title)}</p><p style="margin:10px 0 0">${first ? `첫 열람 보상: ${ic('gems')} ${s.reward} · ${ic('gold')} 3,000` : '이미 읽은 이야기예요.'}</p>`,
             [{ label: '취소', cls: 'sub', value: 0 }, { label: first ? '읽기' : '다시 보기', value: 1 }]);
           if (!r) return;
           await playStory(s.title, s.pre); if (s.post) await playStory(s.title, s.post);
-          if (first) { S.cleared[s.id] = Date.now(); save(); give({ gems: s.reward }, true); await modal(`<h3>${esc(s.title)}</h3><p>${esc(rewardText({ gems: s.reward }))}</p>${newThreads(s.id)}`); }
+          if (first) { const rw = { gems: s.reward, gold: 3000 }; S.cleared[s.id] = Date.now(); save(); give(rw, true); await modal(`<h3>${esc(s.title)}</h3><p>${esc(rewardText(rw))}</p>${newThreads(s.id)}`); }
           refresh(); return;
         }
         if (!await needSquad()) return;
         const r = await modal(`<h3>${esc(s.title)}</h3><p class="muted">${esc(ch.title)}</p>
           ${s.enemies.map(e => `<div class="sw"><span>${elTag(e.elem)} ${esc(e.name)}${e.boss ? ' 👑' : ''}</span><span class="muted">HP ${fmt(e.hp)} · 공격 ${e.atk}</span></div>`).join('')}
-          <p style="margin:10px 0 0">${first ? `첫 클리어 보상: ${ic('gems')} ${s.reward}` : `반복 보상: ${esc(rewardText(repeatReward(s)))}`}</p>`,
+          ${squadScale() < 1 ? `<p class="muted" style="margin:8px 0 0">편성이 ${squadChars().length}명이라 적도 그만큼 약하게 나와요.</p>` : ''}
+          <p style="margin:10px 0 0">${first ? `첫 클리어 보상: ${esc(rewardText(firstReward(s)))}` : `반복 보상: ${esc(rewardText(repeatReward(s)))}`}</p>`,
           [{ label: '취소', cls: 'sub', value: 0 }, ...(first ? [] : [{ label: '스토리 다시 보기', cls: 'sub', value: 2 }]), { label: '출격', value: 1 }]);
         if (!r) return;
         if (r === 2) { await playStory(s.title, s.pre); await playStory(s.title, s.post); refresh(); return; }
         if (first && s.pre) await playStory(s.title, s.pre);
         const bgName = (parseScript(s.pre).find(l => l.type === 'cmd' && l.cmd === '배경') || {}).arg;
-        const res = await runBattle({ title: s.title, bg: bgName, enemies: s.enemies, squad: squadChars() });
+        const res = await runBattle({ title: s.title, bg: bgName, enemies: s.enemies, squad: squadChars(), scale: squadScale() });
         if (!res.win) { await modal('<h3>작전 실패</h3><p class="muted">사원을 육성하거나 편성을 바꿔서 다시 도전해요.</p>'); refresh(); return; }
         count('battle'); afterBattle(res);
         if (first) {
           S.cleared[s.id] = Date.now(); save();
           if (s.post) await playStory(s.title, s.post);
-          give({ gems: s.reward, gold: 2000, exp: 3 }, true);
-          await modal(`<h3>작전 성공!</h3><p>${esc(rewardText({ gems: s.reward, gold: 2000, exp: 3 }))}</p>${newThreads(s.id)}`);
+          const rw = firstReward(s); give(rw, true);
+          await modal(`<h3>작전 성공!</h3><p>${esc(rewardText(rw))}</p>${newThreads(s.id)}`);
         } else { const rw = repeatReward(s); give(rw, true); await modal(`<h3>작전 성공!</h3><p>${esc(rewardText(rw))}</p>`); }
         refresh();
       },
@@ -522,8 +523,12 @@ function viewImg(u) {
     d.onclick = () => { d.remove(); r(); }; $('#app').append(d);
   });
 }
-function repeatReward(s) { return { gold: Math.round(s.reward * 6), exp: 2 }; }
-function farmReward(k) { return { exp: { exp: 6, gold: 1000 }, gold: { gold: 9000 }, wmat: { wmat: 5, gold: 1000 }, core: { core: 2, gold: 1000 } }[k] || { gold: 5000 }; }
+// 스토리 전투는 4명 편성 기준이에요. 인원이 적으면 적 체력·공격을 줄여요 (프롤로그는 클레이 혼자서도 깰 수 있게)
+function squadScale() { return [0.45, 0.7, 0.85][squadChars().length - 1] || 1; }
+// 크레딧은 연수(레벨)에 계속 들어가서, 작전마다 넉넉히 줘요
+function firstReward(s) { return { gems: s.reward, gold: 5000 + s.reward * 20, exp: 3 }; }
+function repeatReward(s) { return { gold: 2000 + s.reward * 20, exp: 2 }; }
+function farmReward(k) { return { exp: { exp: 6, gold: 3000 }, gold: { gold: 20000 }, wmat: { wmat: 5, gold: 3000 }, core: { core: 2, gold: 3000 } }[k] || { gold: 8000 }; }
 function farmEnemies(k) {
   const sq = squadChars(), n = Math.max(1, sq.length);
   const avg = f => sq.reduce((a, c) => a + stats(c)[f], 0) / n;
@@ -645,7 +650,7 @@ async function firstRun() {
   const p0 = allStages()[0]?.s;
   if (p0 && !p0.enemies.length && !S.cleared[p0.id]) {
     await playStory(p0.title, p0.pre); if (p0.post) await playStory(p0.title, p0.post);
-    S.cleared[p0.id] = Date.now(); give({ gems: p0.reward }, true); save();
+    S.cleared[p0.id] = Date.now(); give({ gems: p0.reward, gold: 3000 }, true); save();
   }
   const first = G.chars[0];
   if (first && !owned().length) {

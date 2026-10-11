@@ -96,7 +96,7 @@ export function stats(c, o = S.owned[c.id]) {
   };
 }
 export const power = (c, o) => { const s = stats(c, o); return Math.round(s.hp * 0.25 + s.atk * 2.2 + s.def * 1.6 + s.spd * 2); };
-export const lvCost = o => ({ exp: 1 + Math.floor(o.lv / 10), gold: 150 * o.lv });
+export const lvCost = o => ({ exp: 1 + Math.floor(o.lv / 10), gold: 100 * o.lv });
 export const limitCost = o => ({ core: 2 * (o.limit + 1), gold: 4000 * (o.limit + 1) });
 export const wCost = o => ({ wmat: o.wlv + 1, gold: 1000 * (o.wlv + 1) });
 export function canPay(c) { return (!c.gold || S.gold >= c.gold) && (!c.gems || S.gems >= c.gems) && ['exp', 'wmat', 'core'].every(k => !c[k] || S.mat[k] >= c[k]); }
