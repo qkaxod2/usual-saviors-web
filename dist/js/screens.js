@@ -177,7 +177,7 @@ const SCREENS = {
     bgm(G.prog?.scene?.gacha || '계약');
     scr().innerHTML = header(T('gacha')) + `<div class="body">
       <div class="bsel">${bs.map(x => `<button class="${x === b ? 'on' : ''}" data-go="recruit:${x.id}">${esc(x.name)}</button>`).join('')}</div>
-      <div class="banner">${face && bannerArt(face) ? `<img src="${bannerArt(face)}" alt="">` : ''}
+      <div class="banner">${b.bg && img(b.bg) ? `<img class="wide" src="${img(b.bg)}" alt="">` : face && bannerArt(face) ? `<img src="${bannerArt(face)}" alt="">` : ''}
         <div class="bi"><span class="tag">${b.type === 'pickup' ? '픽업' : b.type === 'pool' ? '한정 풀' : '상시'}</span><h2>${esc(b.name)}</h2>
         <div class="muted">${esc(b.desc || '')}</div>${pu.length ? `<div style="margin-top:6px;font-size:13px">확률 상승: ${pu.map(c => `<b class="r${c.rarity}">${esc(c.name)}</b>`).join(', ')}</div>` : ''}</div></div>
       <div class="card"><div class="row"><span class="grow muted">SSR ${R.ssr}% · SR ${R.sr}% · ${R.pity}회 안에 SSR 확정</span><b>${pity}/${R.pity}</b></div>
