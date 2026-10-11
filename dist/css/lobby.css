@@ -131,3 +131,21 @@
   .lsweep,.ldust,.lm-main::after{display:none}
   .lobby .lch,.ltop,.lside,.lmenu>*,.bubble{animation:none}
 }
+
+/* ---------- 로비 배경 자리 표시 (새 이미지가 들어오기 전까지) ---------- */
+.lobby .lbg.lbg-ph{inset:0;animation:none;background-color:#ddd5c7;background-image:
+  linear-gradient(rgba(43,38,32,.07) 1px,transparent 1px),linear-gradient(90deg,rgba(43,38,32,.07) 1px,transparent 1px),
+  linear-gradient(to top right,transparent calc(50% - 1px),rgba(43,38,32,.12) 50%,transparent calc(50% + 1px)),
+  linear-gradient(to bottom right,transparent calc(50% - 1px),rgba(43,38,32,.12) 50%,transparent calc(50% + 1px));
+  background-size:40px 40px,40px 40px,100% 100%,100% 100%}
+.lobby .lbg.lbg-ph::before{content:"";position:absolute;inset:14px;border:2px dashed rgba(43,38,32,.22);border-radius:6px}
+.lbg-ph span{position:absolute;left:500px;bottom:26px;width:130px;padding:12px 10px;border-radius:6px;text-align:center;
+  background:rgba(251,247,239,.9);border:1px solid rgba(43,38,32,.15);color:#7a6f62;font-size:8.5px;letter-spacing:.18em}
+.lbg-ph b{display:block;font:900 14px var(--serif);letter-spacing:.08em;color:#4a4138;margin:6px 0 4px}
+.lbg-ph small{display:block;font-size:9.5px;letter-spacing:0;line-height:1.5}
+
+/* 시계는 배경 밝기와 상관없이 읽히도록 종이 위에 */
+.lclock{color:var(--ink);text-shadow:none;padding:5px 14px 6px;border-radius:12px;background:rgba(255,253,248,.88);
+  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);box-shadow:0 6px 18px -8px rgba(20,16,12,.45)}
+.lclock b{font-size:22px}
+.lclock span{color:var(--tx2)}

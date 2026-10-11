@@ -62,22 +62,18 @@ const SCREENS = {
     const art = lobbyC && (img(lobbyC.illust?.id));
     bgm(G.prog?.scene?.title || '타이틀');
     const bgStyle = art ? `background-image:url("${art}")` : bgCss(bgName);
-    const [t1, ...tr] = String(G.meta.title || 'Usual Saviors').split(' ');
-    const d = new Date(), today = `${d.getFullYear()}. ${d.getMonth() + 1}. ${d.getDate()}.`;
     scr().innerHTML = `<div class="tscreen">
       <div class="t-bg" style='${bgStyle}'></div>
       ${!art && lobbyC && standing(lobbyC) ? `<div class="t-char"><img src="${standing(lobbyC)}" alt=""></div>` : ''}
-      <div class="t-glitch" style='${bgStyle}'></div><div class="t-shade"></div><div class="t-grain"></div>
-      <div class="t-doc">
-        <div class="t-head"><span>B.E.A.S.T. · LIMBROWN BRANCH</span><span>No. 0007</span></div>
-        <div class="t-kind">임 명 장<small>LETTER OF APPOINTMENT</small></div>
-        <h1 class="t-name">${esc(t1)}${tr.length ? `<em>${esc(tr.join(' '))}</em>` : ''}</h1>
-        <div class="t-sub">${esc(G.meta.sub || '')}</div>
-        <p class="t-body">위 사람을 림브라운 이형사건 합동접수처<br>제7분소 관리관에 임함.</p>
-        <div class="t-sign"><span>${today}</span><span class="t-stamp"><b>合同<br>受付</b></span></div>
+      <div class="t-glitch" style='${bgStyle}'></div><div class="t-shade"></div>
+      <div class="t-motes">${'<i></i>'.repeat(16)}</div>
+      <div class="t-logo">
+        <div class="t-mark"><img class="t-text" src="img/logo_text.webp" alt="${esc(G.meta.title || 'Usual Saviors')}"><img class="t-halo" src="img/logo_halo.webp" alt=""></div>
+        <div class="t-ko"><span>${esc(G.meta.title || '')}</span></div>
       </div>
-      <div class="t-tap"><span>TAP TO CLOCK IN</span>화면을 눌러 출근하기</div>
-      <div class="t-foot">경계도시 림브라운 · 오늘도 세상이 무사하다면, 누군가 평소처럼 일했기 때문이다.</div>
+      <div class="t-tap"><span>TOUCH TO START</span>화면을 눌러 출근하기</div>
+      <div class="t-ver">ver 0.1 · Web</div>
+      <div class="t-copy">오늘도 세상이 무사하다면, 누군가 평소처럼 일했기 때문이다.</div>
     </div>`;
     scr().onclick = async () => {
       sfx('seal'); scr().onclick = null;
@@ -96,7 +92,8 @@ const SCREENS = {
     const poseU = c && (img(c.pose?.id) || standing(c));
     bgm(G.prog?.scene?.lobby || '로비');
     scr().innerHTML = `<div class="lobby">
-      <div class="lbg" style='${bgU ? `background-image:url("${bgU}")` : bgCss(G.prog?.lobbyBg)}'></div>
+      ${LOBBY_BG_PLACEHOLDER ? `<div class="lbg lbg-ph"><span>PLACEHOLDER<b>로비 배경</b><small>1920×1080 권장<br>오른쪽 40%는 메뉴 자리</small></span></div>`
+        : `<div class="lbg" style='${bgU ? `background-image:url("${bgU}")` : bgCss(G.prog?.lobbyBg)}'></div>`}
       ${c && poseU ? `<div class="lch"><div class="lfigure"><img src="${poseU}" alt="${esc(c.name)}">${lobbyHits(c)}</div></div>` : ''}
       <div class="lsweep"></div><div class="ldust">${'<i></i>'.repeat(14)}</div>
       <div class="ltop">
@@ -489,6 +486,8 @@ const SCREENS = {
 let TICK = null;
 const bannerArt = c => img(c.illust?.id) || upper(c) || standing(c);
 function chMap(ch) { const key = String(ch.title || '').split(':')[0].trim(); const m = (G.lib || []).find(l => l.kind === 'map' && key && l.name.startsWith(key) && img(l.id)); return m ? `<img src="${img(m.id)}" alt="" style="width:100%;height:150px;object-fit:cover;border-radius:12px;margin:4px 0 6px;border:1px solid var(--line)">` : ''; }
+// 로비 배경은 새로 그릴 예정이라, 그 전까지는 자리 표시만 보여요. 이미지가 생기면 false로 바꿔요.
+const LOBBY_BG_PLACEHOLDER = true;
 const CHTAB = {};
 function nextOp() {
   const n = allStages().find(x => !S.cleared[x.s.id] && stageOpen(x.s.id));
