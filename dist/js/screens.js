@@ -293,7 +293,7 @@ const SCREENS = {
       <div class="tabs"><button class="${tab === 'story' ? 'on' : ''}" data-go="ops:story">메인 스토리</button><button class="${tab === 'farm' ? 'on' : ''}" data-go="ops:farm">${esc(T('farm'))}</button></div>
       ${tab === 'story' ? (G.chapters || []).map(ch => `<h3 style="margin:14px 0 4px;font-size:15px">${esc(ch.title)}</h3>${chMap(ch)}${ch.stages.map(s => {
         const op = stageOpen(s.id), dn = !!S.cleared[s.id];
-        return `<button class="stage ${dn ? 'done' : ''} ${op ? '' : 'lockd'}" data-act="stage" data-v="${s.id}"><span class="no">${esc(s.title.split(/[.\s]/)[0])}</span><span class="grow">${esc(s.title.replace(/^[\d-]+\.\s*/, ''))}<br><span class="muted">${s.enemies.map(e => `${e.name}${e.boss ? ' 👑' : ''}`).join(', ')}</span></span>${dn ? '' : `<span class="rw">${ic('gems')}${s.reward}</span>`}</button>`;
+        return `<button class="stage ${dn ? 'done' : ''} ${op ? '' : 'lockd'}" data-act="stage" data-v="${s.id}"><span class="no">${esc(s.title.split(/[.\s]/)[0])}</span><span class="grow">${esc(s.title.replace(/^[\d-]+\.\s*/, ''))}<br><span class="muted">${s.enemies.length ? s.enemies.map(e => `${e.name}${e.boss ? ' 👑' : ''}`).join(', ') : '스토리'}</span></span>${dn ? '' : `<span class="rw">${ic('gems')}${s.reward}</span>`}</button>`;
       }).join('')}`).join('') : farms.map(f => { const left = 3 - (S.farm.n[f.key] || 0); return `<button class="stage ${left > 0 ? '' : 'lockd'}" data-act="farm" data-v="${f.key}"><span class="no">${ICON_EMO[f.key] ? ic(f.key) : '⚔️'}</span><span class="grow">${esc(f.name)}<br><span class="muted">${esc(rewardText(farmReward(f.key)))}</span></span><span class="muted">오늘 ${left}/3</span></button>`; }).join('')}
     </div>`;
     bind({
@@ -301,8 +301,17 @@ const SCREENS = {
       async stage(id) {
         if (!stageOpen(id)) { toast('이전 작전을 먼저 끝내요'); return; }
         const { ch, s } = st.find(x => x.s.id === id);
-        if (!await needSquad()) return;
         const first = !S.cleared[s.id];
+        // 적이 없는 스테이지는 스토리만 읽고 끝나요
+        if (!s.enemies.length) {
+          const r = await modal(`<h3>${esc(s.title)}</h3><p class="muted">${esc(ch.title)}</p><p style="margin:10px 0 0">${first ? `첫 열람 보상: ${ic('gems')} ${s.reward}` : '이미 읽은 이야기예요.'}</p>`,
+            [{ label: '취소', cls: 'sub', value: 0 }, { label: first ? '읽기' : '다시 보기', value: 1 }]);
+          if (!r) return;
+          await playStory(s.title, s.pre); if (s.post) await playStory(s.title, s.post);
+          if (first) { S.cleared[s.id] = Date.now(); save(); give({ gems: s.reward }, true); await modal(`<h3>${esc(s.title)}</h3><p>${esc(rewardText({ gems: s.reward }))}</p>${newThreads(s.id)}`); }
+          refresh(); return;
+        }
+        if (!await needSquad()) return;
         const r = await modal(`<h3>${esc(s.title)}</h3><p class="muted">${esc(ch.title)}</p>
           ${s.enemies.map(e => `<div class="sw"><span>${elTag(e.elem)} ${esc(e.name)}${e.boss ? ' 👑' : ''}</span><span class="muted">HP ${fmt(e.hp)} · 공격 ${e.atk}</span></div>`).join('')}
           <p style="margin:10px 0 0">${first ? `첫 클리어 보상: ${ic('gems')} ${s.reward}` : `반복 보상: ${esc(rewardText(repeatReward(s)))}`}</p>`,
@@ -437,7 +446,7 @@ const SCREENS = {
       ${tab === 'world' ? `<div class="card"><b>${esc(w.name || '')}</b><p style="font-size:14px;line-height:1.75">${esc(w.summary || '')}</p></div>
         ${w.lore ? `<div class="card"><b>배경</b><p style="font-size:14px;line-height:1.75;white-space:pre-wrap">${esc(w.lore)}</p></div>` : ''}
         ${(w.factions || []).map(f => `<div class="card"><b>${esc(f.name)}</b><p class="muted" style="margin:6px 0 0;line-height:1.6">${esc(f.desc)}</p></div>`).join('')}`
-        : `<button class="stage" data-act="pro"><span class="no">✦</span><span class="grow">프롤로그</span></button>
+        : `${G.opening?.prologue ? '<button class="stage" data-act="pro"><span class="no">✦</span><span class="grow">프롤로그</span></button>' : ''}
         ${cleared.map(({ s }) => `<button class="stage" data-act="st" data-v="${s.id}"><span class="no">▶</span><span class="grow">${esc(s.title)}</span></button>`).join('') || '<p class="muted">작전을 끝내면 여기서 다시 볼 수 있어요.</p>'}`}</div>`;
     bind({
       async pro() { await playStory('프롤로그', G.opening?.prologue); refresh(); },
@@ -632,6 +641,12 @@ async function firstRun() {
   });
   S.name = nm; save();
   if (G.opening?.prologue) await playStory('프롤로그', G.opening.prologue);
+  // 메인 스토리 첫 화가 스토리 전용이면, 가입 직후 그대로 이어서 보여 줘요 (클레이와의 첫 만남)
+  const p0 = allStages()[0]?.s;
+  if (p0 && !p0.enemies.length && !S.cleared[p0.id]) {
+    await playStory(p0.title, p0.pre); if (p0.post) await playStory(p0.title, p0.post);
+    S.cleared[p0.id] = Date.now(); give({ gems: p0.reward }, true); save();
+  }
   const first = G.chars[0];
   if (first && !owned().length) {
     addChar(first.id); S.squad = [first.id]; S.lobbyChar = first.id;

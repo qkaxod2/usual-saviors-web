@@ -65,6 +65,7 @@ export function playStory(title, script) {
     const showChar = (c, face) => {
       const box = el('vnChar');
       if (!c) { box.style.opacity = box.dataset.id ? '.35' : '0'; return; }
+      if (c.npc) { box.style.opacity = '1'; box.className = 'vn-char'; if (box.dataset.id !== 'npc:' + c.npc) { box.dataset.id = 'npc:' + c.npc; box.innerHTML = `<img src="${c.url}" alt="">`; } return; }
       const u = charImg(c, face); const isUp = !!(c.upper && img(c.upper.id) && !face);
       box.style.opacity = '1'; box.className = 'vn-char' + (isUp ? '' : ' up');
       if (box.dataset.id !== c.id + face) { box.dataset.id = c.id + face; box.innerHTML = u ? `<img src="${u}" alt="">` : ''; }
@@ -101,6 +102,7 @@ export function playStory(title, script) {
               if (/흔들/.test(a)) { const v = el('vn'); v.classList.remove('shake'); void v.offsetWidth; v.classList.add('shake'); }
               else if (/플래시|섬광/.test(a)) { const f = el('vnFlash'); f.classList.remove('go'); void f.offsetWidth; f.classList.add('go'); }
               else if (/암전/.test(a)) el('vnBg').classList.add('dark');
+              else if (/크게|큰\s*글씨|외침/.test(a)) st.big = true;
               break;
             case '소품': case '사진': {
               const u = libImg('prop', a) || libImg(null, a) || (L.cmd === '사진' ? findCG(a) : null);
@@ -129,17 +131,20 @@ export function playStory(title, script) {
           return;
         }
         const text = fill(L.text, SAVE);
+        const big = st.big ? ' big' : ''; st.big = false;
         if (L.type === 'nar') {
-          showChar(null); el('vnName').textContent = ''; st.log.push({ who: '', text }); type(text, 'nar'); return;
+          showChar(null); el('vnName').textContent = ''; st.log.push({ who: '', text }); type(text, 'nar' + big); return;
         }
         // say
         const c = charByName(L.who);
         st.log.push({ who: L.who, text });
         if (st.phone) {
           phoneMsg(L.who, text, L.who === playerName(SAVE) || L.who === G.meta.terms?.player);
-          el('vnName').textContent = L.who; type(text); return;
+          el('vnName').textContent = L.who; type(text, big); return;
         }
-        showChar(c, L.face); el('vnName').textContent = fill(L.who, SAVE); type(text); return;
+        // 사원이 아닌 조연은 라이브러리 'npc' 그림이 있으면 그걸 보여 주고, 없으면 다른 캐릭터를 반투명하게 둬요
+        const npcU = !c && libImg('npc', L.who);
+        showChar(c || (npcU ? { npc: L.who, url: npcU } : null), L.face); el('vnName').textContent = fill(L.who, SAVE); type(text, big); return;
       }
       await sleep(150); finish();
     };
