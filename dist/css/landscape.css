@@ -126,3 +126,12 @@ html,body{overflow:hidden;background:#16130f}
 .idcard{width:250px}
 .reveal>p{max-width:320px;text-align:left!important}
 .results{grid-template-columns:repeat(5,110px);justify-content:center;width:100%}
+
+/* 전투 명령: 공격 · 방어 · 스킬을 한 줄에, 기록은 최근 것만 짧게 (오른쪽 적을 가리지 않게) */
+.cmd .cmd-row{display:contents}
+.cmd{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1.5fr);align-items:stretch}
+.cmd .who{grid-column:1/-1}
+.cmd .btn{padding:6px 5px;font-size:13px;line-height:1.25;white-space:normal;min-width:0}
+.cmd .btn small{font-size:9.5px}
+.cmd .btn .cost{display:inline-block;margin:2px 0 0}
+.blog{max-height:64px;display:flex;flex-direction:column;justify-content:flex-end;overflow:hidden;-webkit-mask-image:linear-gradient(180deg,transparent,#000 14px);mask-image:linear-gradient(180deg,transparent,#000 14px)}

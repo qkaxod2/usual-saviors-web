@@ -230,3 +230,41 @@ input[type=text]{background:var(--bg2);border-color:var(--line);color:var(--tx)}
 .dmg.toa{color:#ff5470;text-shadow:0 2px 0 #000,0 0 6px #000,0 0 12px #000}
 .ally.hit-anim img{animation:allyhit .45s}
 @keyframes allyhit{0%,40%{filter:brightness(.75) sepia(.6) hue-rotate(-40deg) saturate(3)}}
+
+/* 전투: 적 행동 예고 · 흐트러짐 게이지 · 업무 포인트 · 방어 */
+.foe .intent{display:inline-flex;align-items:center;gap:4px;max-width:220px;margin:0 auto 4px;padding:2px 8px;border-radius:99px;font-size:10.5px;line-height:1.35;white-space:nowrap;
+  background:rgba(6,8,14,.85);border:1px solid rgba(255,77,109,.55);color:var(--tx)}
+.foe .intent b{color:#8fd8ff;font-weight:700}
+.foe .intent .ie{color:#ff8fa3;font-weight:700}
+.foe .intent .in{color:var(--tx2);font-size:9.5px}
+.foe .intent.i-charge,.foe .intent.i-smash{border-color:var(--gold);box-shadow:0 0 10px rgba(255,209,102,.35)}
+.foe .intent.i-smash .ie,.foe .intent.i-aoe .ie{color:var(--gold)}
+.foe .intent.i-aoe{border-color:var(--warn);background:rgba(80,10,25,.85)}
+.foe .intent.i-stun{border-color:var(--gold);color:var(--gold)}
+.foe .intent.done{border-color:var(--line);opacity:.6}
+.foe .tmark{top:30px;bottom:auto}
+.foe .tgh{display:flex;justify-content:center;gap:3px;margin-top:4px;height:10px;align-items:center}
+.foe .tgh i{width:9px;height:9px;transform:rotate(45deg);border:1px solid rgba(255,255,255,.45);background:rgba(255,255,255,.06)}
+.foe .tgh i.on{background:#e9eef7;border-color:#fff;box-shadow:0 0 4px rgba(255,255,255,.5)}
+.foe .tgh.brk{font-size:11px;font-weight:900;color:var(--gold);letter-spacing:.05em;text-shadow:0 0 8px rgba(255,209,102,.6)}
+.foe.broken .fi img{filter:saturate(.4) brightness(.8) drop-shadow(0 0 12px rgba(255,209,102,.8));animation:wobble 1.6s ease-in-out infinite}
+@keyframes wobble{25%{transform:rotate(-4deg)}75%{transform:rotate(4deg)}}
+.dmg.brk{color:var(--gold);font-size:24px}
+.bt-order .oc.stun{opacity:.5;border-style:dashed}
+.bt-sp{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--tx2);padding:2px 2px 0}
+.bt-sp .lb{margin-right:2px}
+.bt-sp i{width:16px;height:16px;border-radius:50%;border:1.5px solid rgba(111,211,255,.5);background:rgba(6,8,14,.6);transition:background .2s,box-shadow .2s}
+.bt-sp i.on{background:radial-gradient(circle at 35% 35%,#d8f6ff,var(--ac) 60%);border-color:#fff;box-shadow:0 0 8px rgba(111,211,255,.7)}
+.bt-sp i.use{border-color:var(--gold);box-shadow:0 0 0 2px rgba(255,209,102,.45),0 0 8px rgba(111,211,255,.7)}
+.bt-sp .n{margin-left:auto;color:var(--tx);font-weight:700;font-variant-numeric:tabular-nums}
+.cmd .cmd-row{display:flex;gap:5px}
+.cmd .cmd-row .btn{flex:1}
+.cmd .btn .cost{font-size:11px;padding:0 6px;border-radius:99px;background:rgba(111,211,255,.25);margin-left:4px;vertical-align:1px}
+.battle .cmd .btn.grd{border-color:rgba(159,211,255,.5)}
+.battle .cmd .btn.skill:disabled{background:rgba(14,18,30,.5);border:1px dashed var(--line);color:var(--tx2)}
+.battle .cmd .btn:last-child:not(.skill){background:linear-gradient(180deg,#1b2a44,#121b2e)}
+.ally .inc{position:absolute;right:3px;bottom:54px;font-size:10px;font-weight:700;padding:1px 5px;border-radius:99px;background:rgba(6,8,14,.8);border:1px solid var(--line);color:#ffb3c0;z-index:2}
+.ally .inc.warn{border-color:var(--warn);background:rgba(255,77,109,.35);color:#fff}
+.ally .inc.deadly{border-color:var(--warn);background:var(--warn);color:#fff;animation:blink 1s infinite}
+.ally.guard{border-color:#9fd3ff;box-shadow:0 0 12px rgba(159,211,255,.45),inset 0 0 18px rgba(159,211,255,.25)}
+@media(prefers-reduced-motion:reduce){.foe.broken .fi img,.ally .inc.deadly{animation:none}}

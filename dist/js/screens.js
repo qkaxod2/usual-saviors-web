@@ -314,13 +314,14 @@ const SCREENS = {
         if (!await needSquad()) return;
         const r = await modal(`<h3>${esc(s.title)}</h3><p class="muted">${esc(ch.title)}</p>
           ${s.enemies.map(e => `<div class="sw"><span>${elTag(e.elem)} ${esc(e.name)}${e.boss ? ' 👑' : ''}</span><span class="muted">HP ${fmt(e.hp)} · 공격 ${e.atk}</span></div>`).join('')}
+          ${squadScale() < 1 ? `<p class="muted" style="margin:8px 0 0">편성이 ${squadChars().length}명이라 적도 그만큼 약하게 나와요.</p>` : ''}
           <p style="margin:10px 0 0">${first ? `첫 클리어 보상: ${ic('gems')} ${s.reward}` : `반복 보상: ${esc(rewardText(repeatReward(s)))}`}</p>`,
           [{ label: '취소', cls: 'sub', value: 0 }, ...(first ? [] : [{ label: '스토리 다시 보기', cls: 'sub', value: 2 }]), { label: '출격', value: 1 }]);
         if (!r) return;
         if (r === 2) { await playStory(s.title, s.pre); await playStory(s.title, s.post); refresh(); return; }
         if (first && s.pre) await playStory(s.title, s.pre);
         const bgName = (parseScript(s.pre).find(l => l.type === 'cmd' && l.cmd === '배경') || {}).arg;
-        const res = await runBattle({ title: s.title, bg: bgName, enemies: s.enemies, squad: squadChars() });
+        const res = await runBattle({ title: s.title, bg: bgName, enemies: s.enemies, squad: squadChars(), scale: squadScale() });
         if (!res.win) { await modal('<h3>작전 실패</h3><p class="muted">사원을 육성하거나 편성을 바꿔서 다시 도전해요.</p>'); refresh(); return; }
         count('battle'); afterBattle(res);
         if (first) {
@@ -522,6 +523,8 @@ function viewImg(u) {
     d.onclick = () => { d.remove(); r(); }; $('#app').append(d);
   });
 }
+// 스토리 전투는 4명 편성 기준이에요. 인원이 적으면 적 체력·공격을 줄여요 (프롤로그는 클레이 혼자서도 깰 수 있게)
+function squadScale() { return [0.45, 0.7, 0.85][squadChars().length - 1] || 1; }
 function repeatReward(s) { return { gold: Math.round(s.reward * 6), exp: 2 }; }
 function farmReward(k) { return { exp: { exp: 6, gold: 1000 }, gold: { gold: 9000 }, wmat: { wmat: 5, gold: 1000 }, core: { core: 2, gold: 1000 } }[k] || { gold: 5000 }; }
 function farmEnemies(k) {
