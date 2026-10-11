@@ -65,6 +65,7 @@ export function playStory(title, script) {
     const showChar = (c, face) => {
       const box = el('vnChar');
       if (!c) { box.style.opacity = box.dataset.id ? '.35' : '0'; return; }
+      if (c.npc) { box.style.opacity = '1'; box.className = 'vn-char'; if (box.dataset.id !== 'npc:' + c.npc) { box.dataset.id = 'npc:' + c.npc; box.innerHTML = `<img src="${c.url}" alt="">`; } return; }
       const u = charImg(c, face); const isUp = !!(c.upper && img(c.upper.id) && !face);
       box.style.opacity = '1'; box.className = 'vn-char' + (isUp ? '' : ' up');
       if (box.dataset.id !== c.id + face) { box.dataset.id = c.id + face; box.innerHTML = u ? `<img src="${u}" alt="">` : ''; }
@@ -141,7 +142,9 @@ export function playStory(title, script) {
           phoneMsg(L.who, text, L.who === playerName(SAVE) || L.who === G.meta.terms?.player);
           el('vnName').textContent = L.who; type(text, big); return;
         }
-        showChar(c, L.face); el('vnName').textContent = fill(L.who, SAVE); type(text, big); return;
+        // 사원이 아닌 조연은 라이브러리 'npc' 그림이 있으면 그걸 보여 주고, 없으면 다른 캐릭터를 반투명하게 둬요
+        const npcU = !c && libImg('npc', L.who);
+        showChar(c || (npcU ? { npc: L.who, url: npcU } : null), L.face); el('vnName').textContent = fill(L.who, SAVE); type(text, big); return;
       }
       await sleep(150); finish();
     };
