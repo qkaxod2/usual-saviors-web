@@ -8,7 +8,7 @@ import { S, stats, save } from './state.js';
 const FOE_ICON = ['👾', '🕷️', '⚙️', '🦇', '👁️', '🌀', '🐺', '💀'];
 const foeIcon = n => { let h = 0; for (const ch of n) h = (h * 7 + ch.charCodeAt(0)) % 997; return FOE_ICON[h % FOE_ICON.length]; };
 const n0 = v => Math.max(0, Math.round(v)).toLocaleString();
-const SK_KIND = { dmg: '단일 공격', aoe: '적 전체 공격', heal: '아군 전체 회복', shield: '아군 전체 보호막', buff: '아군 전체 공격력 증가', debuff: '적 전체 매료' };
+const SK_KIND = { dmg: '단일 공격', aoe: '적 전체 공격', heal: '아군 전체 회복', shield: '아군 전체 보호막', buff: '아군 전체 공격력 증가', debuff: '적 전체 매료', mark: '대상 조준 · 약점 노출', scale: '아군 전체 보호막 · 공격력 증가' };
 const SP_MAX = 5, SP_START = 3;
 const GUARD_CUT = 0.5;      // 방어 중 받는 피해
 const BREAK_TAKEN = 1.5;    // 흐트러진 적이 받는 피해
@@ -48,7 +48,7 @@ function makeFoe(e, scale) {
   const k = scale || 1;
   const ai = AI[e.ai] ? e.ai : NAME_AI[e.name] || (e.boss ? 'boss' : 'basic');
   const tough = e.tough || AI[ai].tough;
-  return { side: 'e', src: e, name: e.name, elem: e.elem, boss: !!e.boss, ai, hp: Math.round(e.hp * k), mhp: Math.round(e.hp * k), atk: Math.round(e.atk * Math.sqrt(k)), def: Math.round(e.def * Math.sqrt(k)), spd: e.spd || 100, turn: 0, buf: 0, bufT: 0, shield: 0, tough, mtough: tough, broken: false, intent: null };
+  return { side: 'e', src: e, name: e.name, elem: e.elem, boss: !!e.boss, ai, hp: Math.round(e.hp * k), mhp: Math.round(e.hp * k), atk: Math.round(e.atk * Math.sqrt(k)), def: Math.round(e.def * Math.sqrt(k)), spd: e.spd || 100, turn: 0, buf: 0, bufT: 0, mark: 0, markT: 0, shield: 0, tough, mtough: tough, broken: false, intent: null };
 }
 
 // opt: {title, bg, enemies, squad(chars), scale, music}
@@ -127,6 +127,7 @@ export function runBattle(opt) {
       } else {
         if (dst.broken) d *= AI[dst.ai].breakTaken || BREAK_TAKEN;
         if (dst.buf < 0) d *= 1 - dst.buf * 0.75; // 매료·약화: 받는 피해 증가
+        if (dst.markT) d *= 1 + dst.mark; // 조준: 약점이 드러나 받는 피해 증가
       }
       return Math.max(1, d);
     }
@@ -175,6 +176,7 @@ export function runBattle(opt) {
         if (e.hp > 0 && em > 1) tags.push(chip('약점', 'good'));
         if (e.hp > 0 && em < 1) tags.push(chip('저항', 'bad'));
         if (e.buf < 0 && e.bufT) tags.push(chip(`매료 ${e.bufT}`, 'good'));
+        if (e.hp > 0 && e.markT) tags.push(chip(`◎ 조준 ${e.markT} · 받는 피해 +${Math.round(e.mark * 100)}%`, 'good'));
         const ai = AI[e.ai];
         if (e.hp > 0 && e.broken) tags.push(chip(ai.breakTaken ? `빈자리 노출 · 받는 피해 ×${ai.breakTaken}` : `받는 피해 ×${BREAK_TAKEN}`, 'good'));
         else if (e.hp > 0 && ai.regen) tags.push(chip(`재생 · 라운드마다 ${Math.round(ai.regen * 100)}%`, 'bad'));
@@ -235,7 +237,7 @@ export function runBattle(opt) {
       if (!quiet) log(`${nm(e)} <span class="hl">흐트러짐!</span> 다음 차례를 쉬고 받는 피해 ×${ai.breakTaken || BREAK_TAKEN}`);
       return true;
     }
-    const breakAmt = (a, e, base) => base + (elemMult(a.elem, e.elem) > 1 ? 1 : 0);
+    const breakAmt = (a, e, base) => base + (elemMult(a.elem, e.elem) > 1 ? 1 : 0) + (e.markT ? 1 : 0); // 조준된 적은 게이지가 1 더 깎여요
     // 피해 한 번을 화면에 보여 주고 로그 한 줄 문구를 돌려줘요
     function showHit(dst, r) {
       drawFoes(); drawAllies();
@@ -251,6 +253,7 @@ export function runBattle(opt) {
       if (e.broken) s += 4;
       else if (e.tough <= breakAmt(a, e, base)) s += 3 + (e.intent && INTENT[e.intent.kind].mult > 1 || e.intent?.kind === 'charge' ? 2 : 0);
       if (e.intent?.kind === 'charge' || e.charged) s += 1.5;
+      if (e.markT) s += 1.5; // 조준 표시가 뜬 적부터
       if (elemMult(a.elem, e.elem) > 1) s += 1;
       if (elemMult(a.elem, e.elem) < 1) s -= 1;
       if (e.hp <= estDmg(a, e, base === 1 ? 1 : a.sk.power)) s += 2.5;
@@ -298,6 +301,21 @@ export function runBattle(opt) {
           for (const x of alive(A)) { x.shield = Math.round(a.def * sk.power * 1.3); x.shT = 2; }
           drawAllies(); for (const x of alive(A)) popup(allyEl(x), '🛡 ' + n0(x.shield), 'heal');
           log(`${nm(a)}의 「${esc(sk.name)}」 → 아군 전체 <span class="hl">보호막 ${n0(alive(A)[0]?.shield || 0)}</span> (2턴)`);
+        } else if (k === 'scale') {
+          // 보호막과 함께 공격력도 올려 줘요. 막아 줄 테니 대담하게 치라는 뜻이에요
+          const sh = Math.round(a.def * sk.power * 1.3), up = 0.12 * sk.power;
+          for (const x of alive(A)) { x.shield = sh; x.shT = 2; x.buf = Math.max(x.buf || 0, up); x.bufT = 2; }
+          drawAllies(); for (const x of alive(A)) popup(allyEl(x), `🛡 ${n0(sh)}<small>공격↑</small>`, 'heal');
+          log(`${nm(a)}의 「${esc(sk.name)}」 → 아군 전체 <span class="hl">보호막 ${n0(sh)} · 공격력 ${Math.round(up * 100)}% 증가</span> (2턴)`);
+        } else if (k === 'mark') {
+          // 대상 하나에 조준 표시: 받는 피해가 늘고, 아군 공격이 흐트러짐 게이지를 1 더 깎아요
+          // 고른 대상이 없으면 오래 버틸 적(보스, 체력 많은 적)을 조준해요
+          const e = target && target.hp > 0 ? target : alive(E).sort((x, y) => (y.boss - x.boss) || (x.broken - y.broken) || (y.hp - x.hp))[0];
+          e.mark = 0.2 * sk.power; e.markT = 2;
+          popup(foeEl(e), '◎ 조준', 'adv'); sfx('seal');
+          const b = breakAmt(a, e, 1);
+          wear(e, b, true); drawFoes();
+          log(`${nm(a)}의 「${esc(sk.name)}」 → ${nm(e)} <span class="hl">조준</span> (2턴: 받는 피해 +${Math.round(e.mark * 100)}%, 아군 공격마다 흐트러짐 게이지 -1 추가 · 지금 -${b})${e.broken ? ' <span class="hl">흐트러짐!</span>' : ''}`);
         } else if (k === 'buff') {
           for (const x of alive(A)) { x.buf = 0.17 * sk.power; x.bufT = 2; }
           drawAllies(); for (const x of alive(A)) popup(allyEl(x), '공격↑', 'heal');
@@ -386,6 +404,8 @@ export function runBattle(opt) {
       if (useSk && k === 'heal') useSk = alive(A).some(x => x.hp / x.mhp < (full ? 0.85 : 0.65));
       else if (useSk && k === 'shield') useSk = alive(A).some(x => !x.shield && incoming(x) > x.hp * 0.25);
       else if (useSk && k === 'buff') useSk = !alive(A).some(x => x.bufT);
+      else if (useSk && k === 'scale') useSk = alive(A).some(x => !x.shield && incoming(x) > x.hp * 0.25) || !alive(A).some(x => x.bufT);
+      else if (useSk && k === 'mark') useSk = !alive(E).some(e => e.markT) && alive(E).some(e => !e.broken && (e.boss || e.hp > estDmg(a, e, 1) * 2));
       if (full && useSk) return 'sk'; // 포인트가 넘쳐 버려지지 않게
       if (inc >= hp && inc * GUARD_CUT < hp) return 'grd'; // 방어하면 버틸 수 있을 때
       if (!a.lastGrd && a.role === 'def' && bigHit && !taunter()) return 'grd';
@@ -412,6 +432,7 @@ export function runBattle(opt) {
     function endTurnTick(u) {
       if (u.bufT) { u.bufT--; if (!u.bufT) u.buf = 0; }
       if (u.shT) { u.shT--; if (!u.shT) u.shield = 0; }
+      if (u.markT) { u.markT--; if (!u.markT) u.mark = 0; }
     }
     async function roundEnd() {
       for (const e of alive(E)) {
