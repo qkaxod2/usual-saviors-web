@@ -57,14 +57,10 @@ const matLine = () => `<div class="res" style="flex-wrap:wrap;margin:4px 0"><spa
 const SCREENS = {
   // ============ 타이틀 ============
   title() {
-    const lobbyC = charById(S.lobbyChar) || owned()[0] || G.chars[0];
-    const bgName = G.prog?.titleBg || G.prog?.lobbyBg;
-    const art = lobbyC && (img(lobbyC.illust?.id));
     bgm(G.prog?.scene?.title || '타이틀');
-    const bgStyle = art ? `background-image:url("${art}")` : bgCss(bgName);
+    const bgStyle = `background-image:url("${TITLE_KEYART}")`;
     scr().innerHTML = `<div class="tscreen">
       <div class="t-bg" style='${bgStyle}'></div>
-      ${!art && lobbyC && standing(lobbyC) ? `<div class="t-char"><img src="${standing(lobbyC)}" alt=""></div>` : ''}
       <div class="t-glitch" style='${bgStyle}'></div><div class="t-shade"></div>
       <div class="t-motes">${'<i></i>'.repeat(16)}</div>
       <div class="t-logo">
@@ -488,6 +484,8 @@ const bannerArt = c => img(c.illust?.id) || upper(c) || standing(c);
 function chMap(ch) { const key = String(ch.title || '').split(':')[0].trim(); const m = (G.lib || []).find(l => l.kind === 'map' && key && l.name.startsWith(key) && img(l.id)); return m ? `<img src="${img(m.id)}" alt="" style="width:100%;height:150px;object-fit:cover;border-radius:12px;margin:4px 0 6px;border:1px solid var(--line)">` : ''; }
 // 로비 배경은 새로 그릴 예정이라, 그 전까지는 자리 표시만 보여요. 이미지가 생기면 false로 바꿔요.
 const LOBBY_BG_PLACEHOLDER = true;
+// 타이틀 키아트: 해 질 녘 거리의 클레이·리베르·에리얼 (NovelAI V5, 위쪽 가운데는 로고 자리)
+const TITLE_KEYART = 'img/title_keyart.webp';
 const CHTAB = {};
 function nextOp() {
   const n = allStages().find(x => !S.cleared[x.s.id] && stageOpen(x.s.id));
