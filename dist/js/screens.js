@@ -84,12 +84,10 @@ const SCREENS = {
     const own = owned();
     let c = charById(S.lobbyChar); if (!c || !S.owned[c.id]) c = own[0];
     const b = badges();
-    const bgU = c && img(c.lbbg?.id);
     const poseU = c && (img(c.pose?.id) || standing(c));
     bgm(G.prog?.scene?.lobby || '로비');
     scr().innerHTML = `<div class="lobby">
-      ${LOBBY_BG_PLACEHOLDER ? `<div class="lbg lbg-ph"><span>PLACEHOLDER<b>로비 배경</b><small>1920×1080 권장<br>오른쪽 40%는 메뉴 자리</small></span></div>`
-        : `<div class="lbg" style='${bgU ? `background-image:url("${bgU}")` : bgCss(G.prog?.lobbyBg)}'></div>`}
+      <div class="lbg" style='background-image:url("${LOBBY_BG}")'></div>
       ${c && poseU ? `<div class="lch"><div class="lfigure"><img src="${poseU}" alt="${esc(c.name)}">${lobbyHits(c)}</div></div>` : ''}
       <div class="lsweep"></div><div class="ldust">${'<i></i>'.repeat(14)}</div>
       <div class="ltop">
@@ -483,7 +481,8 @@ let TICK = null;
 const bannerArt = c => img(c.illust?.id) || upper(c) || standing(c);
 function chMap(ch) { const key = String(ch.title || '').split(':')[0].trim(); const m = (G.lib || []).find(l => l.kind === 'map' && key && l.name.startsWith(key) && img(l.id)); return m ? `<img src="${img(m.id)}" alt="" style="width:100%;height:150px;object-fit:cover;border-radius:12px;margin:4px 0 6px;border:1px solid var(--line)">` : ''; }
 // 로비 배경은 새로 그릴 예정이라, 그 전까지는 자리 표시만 보여요. 이미지가 생기면 false로 바꿔요.
-const LOBBY_BG_PLACEHOLDER = true;
+// 로비 배경: 새벽등대 사무소 (NovelAI V5 → Real-ESRGAN 애니 모델로 확대, 오른쪽 40%는 메뉴 자리)
+const LOBBY_BG = 'img/lobby_bg.webp';
 // 타이틀 키아트: 해 질 녘 거리의 클레이·리베르·에리얼 (NovelAI V5 1216×832 → Real-ESRGAN 애니 모델로 2432×1664, 위쪽 가운데는 로고 자리)
 const TITLE_KEYART = 'img/title_keyart.webp';
 const CHTAB = {};
