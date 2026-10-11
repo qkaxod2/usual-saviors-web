@@ -77,16 +77,6 @@ input[type=text]{background:var(--bg2);border-color:var(--line);color:var(--tx)}
 .av{background:#e8e1d4}
 
 /* 로비: 사무소 책상 위 */
-.lobby .lbg::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(243,238,228,.0) 55%,rgba(243,238,228,.85))}
-.lobby .top{background:linear-gradient(180deg,rgba(243,238,228,.92),rgba(243,238,228,0))}
-.lobby .top h1 .muted{color:var(--tx2)}
-.lside{gap:6px}
-.lside button{width:54px;height:54px;border-radius:8px;background:var(--paper);border:1px solid var(--line);box-shadow:var(--shadow);color:var(--ink);font-size:11px;font-weight:700}
-.lmenu{background:linear-gradient(0deg,rgba(243,238,228,.98) 60%,rgba(243,238,228,0));gap:6px;padding-top:22px}
-.lmenu button{background:var(--paper);border:1px solid var(--line);box-shadow:var(--shadow);color:var(--ink);border-radius:8px;font-size:12px;font-weight:700;padding:9px 2px 8px}
-.lmenu button.big{background:var(--stamp);color:#fff;border-color:#8f2a1f;box-shadow:0 2px 0 #8f2a1f}
-.bubble{bottom:calc(96px + var(--safe-b));left:14px;right:auto;max-width:72%;background:var(--paper);border:1px solid var(--line);border-radius:4px 14px 14px 14px;box-shadow:var(--shadow);color:var(--ink)}
-.bubble b{color:var(--stamp)}
 
 /* 스토리(앞면): 종이 대사창 */
 .vn-box{background:rgba(255,253,248,.96);border:1px solid var(--line);border-radius:6px;box-shadow:0 10px 30px -10px rgba(0,0,0,.5);color:var(--ink)}
@@ -168,5 +158,4 @@ input[type=text]{background:var(--bg2);border-color:var(--line);color:var(--tx)}
 .banner{color:#fff;border-radius:8px}
 .banner h2{font-family:var(--serif);color:#fff}
 .banner .muted,.banner .tag{color:rgba(255,255,255,.8);border-color:rgba(255,255,255,.3)}
-.lobby .top h1{background:var(--paper);border:1px solid var(--line);box-shadow:var(--shadow);border-radius:6px;padding:5px 10px;flex:0 1 auto;margin-right:auto}
 .cc .cr{background:var(--paper);padding:0 5px;border-radius:3px;text-shadow:none}

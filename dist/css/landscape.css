@@ -32,18 +32,7 @@ html,body{overflow:hidden;background:#16130f}
 .opening{font-size:20px}
 
 /* ---------- 로비 ---------- */
-.lobby .lbg::after{background:linear-gradient(90deg,rgba(243,238,228,0) 45%,rgba(243,238,228,.55) 68%,rgba(243,238,228,.9))}
-.lobby .lch{right:auto;width:58%;height:97%}
-.lside{top:56px;right:20px;flex-direction:row;gap:8px}
-.lside button{width:58px;height:58px}
-.lmenu{left:auto;right:20px;top:128px;bottom:20px;width:316px;padding:0;background:none;
   grid-template-columns:1fr 1fr;grid-auto-rows:1fr;gap:10px}
-.lmenu button{flex-direction:row;justify-content:flex-start;gap:10px;padding:0 16px;font-size:16px;border-radius:10px}
-.lmenu button i{font-size:24px}
-.lmenu button[data-go="ops"]{grid-column:1/-1;font-size:20px;font-family:var(--serif);background:var(--navy);color:#fff;border-color:#1d3048;box-shadow:0 3px 0 #1d3048}
-.lmenu button[data-go="ops"] i{font-size:30px}
-.lmenu .dot{top:8px;right:8px}
-.bubble{left:24px;right:auto;bottom:24px;max-width:46%;font-size:15px}
 
 /* ---------- 사원 목록 / 영입 풀 ---------- */
 .grid{grid-template-columns:repeat(6,1fr);gap:10px}

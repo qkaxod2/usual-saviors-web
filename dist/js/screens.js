@@ -83,23 +83,26 @@ const SCREENS = {
     scr().innerHTML = `<div class="lobby">
       <div class="lbg" style='${bgU ? `background-image:url("${bgU}")` : bgCss(G.prog?.lobbyBg)}'></div>
       ${c && poseU ? `<div class="lch"><div class="lfigure"><img src="${poseU}" alt="${esc(c.name)}">${lobbyHits(c)}</div></div>` : ''}
-      <div class="ltop"><div class="top"><h1 style="font-size:14px">${esc(playerName(S))} <span class="muted">· ${esc(G.meta.title || '')}</span></h1>${resBar()}</div></div>
-      <div class="lside">
-        <button data-go="mail"><i>✉️</i>우편${b.mail ? '<span class="dot"></span>' : ''}</button>
-        <button data-go="missions"><i>📋</i>임무${b.mission ? '<span class="dot"></span>' : ''}</button>
-        <button data-go="shop"><i>🛒</i>${esc(G.meta.shop?.name || '상점')}</button>
-        <button data-go="records"><i>📚</i>기록</button>
-        <button data-go="settings"><i>⚙️</i>설정</button>
+      <div class="lsweep"></div><div class="ldust">${'<i></i>'.repeat(14)}</div>
+      <div class="ltop">
+        <div class="lid"><span class="lseal">印</span><div><small>B.E.A.S.T. 림브라운 · 합동접수처 제7분소</small><b>${esc(playerName(S))}${playerName(S) !== T('player') ? ` <em>${esc(T('player'))}</em>` : ''}</b></div></div>
+        <div class="lclock" id="lclock"></div>
+        ${resBar()}
       </div>
+      <nav class="lside">
+        ${[['mail', 'mail', '우편', b.mail], ['missions', 'task', '임무', b.mission], ['shop', 'shop', G.meta.shop?.name || '상점'], ['records', 'book', '기록'], ['settings', 'gear', '설정']]
+          .map(([g, i, n, d]) => `<button data-go="${g}" aria-label="${esc(n)}">${LICON[i]}<span>${esc(n)}</span>${d ? '<span class="dot"></span>' : ''}</button>`).join('')}
+      </nav>
       <div id="bub"></div>
-      <div class="lmenu">
-        <button data-go="ops"><i>⚔️</i>${esc(T('ops'))}</button>
-        <button data-go="crew"><i>👥</i>${esc(T('crew'))}</button>
-        <button class="big" data-go="recruit"><i>✨</i>${esc(T('gacha'))}</button>
-        <button data-go="talk"><i>💬</i>메신저${b.talk ? '<span class="dot"></span>' : ''}</button>
-        <button data-go="dispatch"><i>🧭</i>${esc(T('dispatch'))}${b.disp ? '<span class="dot"></span>' : ''}</button>
-      </div></div>`;
+      <nav class="lmenu">
+        <button class="lm-main" data-go="ops" style="--i:0"><small>OPERATION</small><b>${esc(T('ops'))}</b><span>${esc(nextOp())}</span><i class="lm-go">${LICON.arrow}</i></button>
+        ${[['crew', 'crew', T('crew'), 'STAFF'], ['recruit', 'spark', T('gacha'), 'RECRUIT', '', 'hot'], ['talk', 'chat', '메신저', 'MESSENGER', b.talk], ['dispatch', 'compass', T('dispatch'), 'DISPATCH', b.disp]]
+          .map(([g, i, n, en, d, cls], k) => `<button class="lm-row ${cls || ''}" data-go="${g}" style="--i:${k + 1}"><em>0${k + 2}</em>${LICON[i]}<b>${esc(n)}</b><small>${en}</small>${d ? '<span class="dot"></span>' : ''}${cls === 'hot' ? '<span class="lm-tag">모집 중</span>' : ''}</button>`).join('')}
+      </nav></div>`;
     let bt = null;
+    const clock = () => { const el = $('#lclock'); if (!el) return; const d = new Date(), W = '일월화수목금토';
+      el.innerHTML = `<b>${String(d.getHours()).padStart(2, '0')}<i>:</i>${String(d.getMinutes()).padStart(2, '0')}</b><span>${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')} (${W[d.getDay()]}) · 근무 중</span>`; };
+    clock(); const ck = setInterval(clock, 10000); lobbyCleanup = () => clearInterval(ck);
     const host = $('.lobby .lch'), figure = $('.lobby .lfigure'), portrait = figure?.querySelector('img');
     let alpha = null;
     if (portrait) {
@@ -115,7 +118,7 @@ const SCREENS = {
       };
       portrait.addEventListener('load', ready); if (portrait.complete) ready();
       const observer = new ResizeObserver(() => fitLobbyFigure(host, figure, portrait)); observer.observe(host);
-      lobbyCleanup = () => { observer.disconnect(); portrait.removeEventListener('load', ready); clearTimeout(bt); alpha = null; };
+      lobbyCleanup = () => { clearInterval(ck); observer.disconnect(); portrait.removeEventListener('load', ready); clearTimeout(bt); alpha = null; };
     }
     const say = (who, text) => {
       clearTimeout(bt);
@@ -472,6 +475,23 @@ let TICK = null;
 const bannerArt = c => img(c.illust?.id) || upper(c) || standing(c);
 function chMap(ch) { const key = String(ch.title || '').split(':')[0].trim(); const m = (G.lib || []).find(l => l.kind === 'map' && key && l.name.startsWith(key) && img(l.id)); return m ? `<img src="${img(m.id)}" alt="" style="width:100%;height:150px;object-fit:cover;border-radius:12px;margin:4px 0 6px;border:1px solid var(--line)">` : ''; }
 const CHTAB = {};
+function nextOp() {
+  const n = allStages().find(x => !S.cleared[x.s.id] && stageOpen(x.s.id));
+  return n ? n.s.title : '모든 작전 완료';
+}
+const svg = d => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+const LICON = {
+  mail: svg('<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3.5 6.5 8.5 6 8.5-6"/>'),
+  task: svg('<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1M8.5 10.5l2 2 4-4M8.5 16h7"/>'),
+  shop: svg('<path d="M4 9h16l-1.2 10.2a2 2 0 0 1-2 1.8H7.2a2 2 0 0 1-2-1.8z"/><path d="M8.5 9V7a3.5 3.5 0 0 1 7 0v2"/>'),
+  book: svg('<path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z"/><path d="M4 20.5A2.5 2.5 0 0 0 6.5 23H20v-5"/>'),
+  gear: svg('<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>'),
+  crew: svg('<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14.5a6.5 6.5 0 0 1 3.5 5.5"/>'),
+  spark: svg('<path d="M12 3v4M12 17v4M3 12h4M17 12h4"/><path d="m12 8 1.2 2.8L16 12l-2.8 1.2L12 16l-1.2-2.8L8 12l2.8-1.2z"/>'),
+  chat: svg('<path d="M20 12a8 8 0 0 1-11.6 7.1L4 20l.9-4.1A8 8 0 1 1 20 12z"/><path d="M8.5 12h.01M12 12h.01M15.5 12h.01"/>'),
+  compass: svg('<circle cx="12" cy="12" r="9"/><path d="m15.5 8.5-2 5-5 2 2-5z"/>'),
+  arrow: svg('<path d="M5 12h14M13 6l6 6-6 6"/>'),
+};
 export let DATA_SRC = 'file';
 export function setDataSrc(s) { DATA_SRC = s; }
 
