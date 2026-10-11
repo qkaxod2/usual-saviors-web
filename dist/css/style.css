@@ -115,6 +115,7 @@ img{user-select:none;-webkit-user-drag:none}
 /* gacha */
 .banner{position:relative;border-radius:16px;overflow:hidden;min-height:240px;border:1px solid var(--line);background:linear-gradient(135deg,#1b1530,#0f2a2a);display:flex;align-items:flex-end;padding:14px;margin:8px 0}
 .banner img{position:absolute;right:0;top:0;height:100%;width:72%;object-fit:cover;object-position:50% 12%;-webkit-mask-image:linear-gradient(to right,transparent,#000 40%);mask-image:linear-gradient(to right,transparent,#000 40%)}
+.banner img.wide{width:100%;object-position:60% 45%;-webkit-mask-image:linear-gradient(to right,rgba(0,0,0,.35),#000 45%);mask-image:linear-gradient(to right,rgba(0,0,0,.35),#000 45%)}
 .banner .bi{position:relative;max-width:62%}
 .banner h2{margin:0 0 4px;font-size:20px;font-weight:900;text-shadow:0 2px 8px #000}
 .bsel{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px}
