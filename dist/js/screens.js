@@ -573,8 +573,8 @@ function repeatReward(s) { return { gold: 2000 + s.reward * 20, exp: 2 }; }
 // 상시정리: 던전마다 초급 · 중급 · 상급. 앞 단계를 한 번 깨면 다음 단계가 열려요 (하루 횟수는 던전마다 3번, 단계와 상관없이)
 export const FARM_TIER = [
   { name: '초급', rec: 4000, hp: 800, atk: 110, def: 30, mult: 1 },
-  { name: '중급', rec: 9000, hp: 2600, atk: 300, def: 80, mult: 2.2 },
-  { name: '상급', rec: 15000, hp: 5200, atk: 520, def: 130, mult: 4, boss: true },
+  { name: '중급', rec: 9000, hp: 3000, atk: 480, def: 90, mult: 2.2 },
+  { name: '상급', rec: 15000, hp: 7000, atk: 900, def: 150, mult: 4, boss: true },
 ];
 const FARM_BASE = { exp: { exp: 6, gold: 3000 }, gold: { gold: 20000 }, wmat: { wmat: 5, gold: 3000 }, core: { core: 2, gold: 3000 } };
 function farmReward(k, t = 0) {
