@@ -515,6 +515,7 @@ export function runBattle(opt) {
       return true;
     }
     function waitCmd(a) {
+      hideBanner();
       return new Promise(res => {
         const c = $('#cmd', ov);
         const draw = () => {

@@ -23,8 +23,8 @@
 .ally.ult::after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(115deg,transparent 30%,rgba(255,240,200,.35) 45%,transparent 60%);background-size:250% 100%;animation:ultsh 1.8s ease-in-out infinite}
 @keyframes ultsh{0%{background-position:120% 0}60%,100%{background-position:-120% 0}}
 .ally.ultq{border-color:#fff;box-shadow:0 0 22px rgba(255,209,102,.9)}
-.ally .ultb{position:absolute;left:50%;top:33%;transform:translate(-50%,-50%);z-index:3;font-size:12px;font-weight:900;color:#1a1204;background:var(--gold);padding:2px 9px;border-radius:99px;
-  box-shadow:0 0 12px rgba(255,209,102,.8);white-space:nowrap;animation:blink 1.4s infinite}
+.ally .ultb{position:absolute;left:0;right:0;top:0;z-index:4;font-size:11px;font-weight:900;color:#1a1204;text-align:center;padding:3px 0;
+  background:linear-gradient(90deg,#c99a2e,var(--gold),#c99a2e);box-shadow:0 2px 10px rgba(255,209,102,.6);letter-spacing:.08em}
 .ally.ultq .ultb{background:#fff;animation:none}
 
 /* 속성 칩: 두 글자 이름의 첫 글자만 */
