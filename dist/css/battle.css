@@ -1,0 +1,64 @@
+/* =========================================================
+   타임라인 전투: 타임라인 · 필살기 게이지 · 컷인
+   ========================================================= */
+
+/* 타임라인: 다음 차례들을 왼쪽부터 */
+.tlb .bt-order{gap:3px}
+.tlb .bt-order .oc{padding:2px 7px 2px 2px}
+.tlb .bt-order .oc.ultq{border-color:var(--gold);background:rgba(60,44,8,.85);box-shadow:0 0 10px rgba(255,209,102,.5);margin-right:6px}
+.tlb .bt-order .oc .ut{font-size:9px;color:#1a1204;background:var(--gold);border-radius:99px;padding:0 5px;margin-left:2px}
+.tlb .bt-order .oc.stun{opacity:.55;border-style:dashed}
+
+/* 명령: 공격 · 역할 스킬 두 칸 */
+.tlb .cmd{grid-template-columns:minmax(0,1fr) minmax(0,1.6fr)}
+.tlb .cmd .hint{grid-column:1/-1;font-size:10px;color:var(--tx2);text-align:right}
+.tlb .cmd .btn .cost{background:rgba(111,211,255,.25)}
+
+/* 필살기 게이지와 준비된 카드 */
+.ally .bar.en{height:4px;margin-top:3px;background:rgba(255,255,255,.08)}
+.ally .bar.en i{background:linear-gradient(90deg,#b98a2e,var(--gold))}
+.ally .bar.en.full i{background:linear-gradient(90deg,var(--gold),#fff6d6,var(--gold));background-size:200% 100%;animation:ensh 1.2s linear infinite}
+@keyframes ensh{to{background-position:-200% 0}}
+.ally.ult{border-color:var(--gold);box-shadow:0 0 16px rgba(255,209,102,.55),inset 0 0 18px rgba(255,209,102,.25);cursor:pointer}
+.ally.ult::after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(115deg,transparent 30%,rgba(255,240,200,.35) 45%,transparent 60%);background-size:250% 100%;animation:ultsh 1.8s ease-in-out infinite}
+@keyframes ultsh{0%{background-position:120% 0}60%,100%{background-position:-120% 0}}
+.ally.ultq{border-color:#fff;box-shadow:0 0 22px rgba(255,209,102,.9)}
+.ally .ultb{position:absolute;left:0;right:0;top:0;z-index:4;font-size:11px;font-weight:900;color:#1a1204;text-align:center;padding:3px 0;
+  background:linear-gradient(90deg,#c99a2e,var(--gold),#c99a2e);box-shadow:0 2px 10px rgba(255,209,102,.6);letter-spacing:.08em}
+.ally.ultq .ultb{background:#fff;animation:none}
+
+/* 속성 칩: 두 글자 이름의 첫 글자만 */
+.ally .an .el,.foe .fn .el,.cutin .el{font-size:9px}
+
+/* ---- 컷인 ---- */
+.cutin{position:absolute;inset:0;z-index:30;pointer-events:none;overflow:hidden;display:none;--cc:var(--ac)}
+.cutin.on{display:block;pointer-events:auto;cursor:pointer}
+.cutin.c-신앙{--cc:#f2c14e}.cutin.c-망각{--cc:#a27cff}.cutin.c-해석{--cc:#4fc3ff}
+.cutin .ci-dim{position:absolute;inset:0;background:rgba(3,4,8,.62);animation:ci-dim .25s ease-out}
+.cutin .ci-band{position:absolute;left:-10%;right:-10%;top:24%;height:52%;transform:skewY(-7deg);
+  background:linear-gradient(90deg,rgba(6,8,14,.95),color-mix(in srgb,var(--cc) 40%,#06080e) 55%,rgba(6,8,14,.95));
+  border-top:3px solid var(--cc);border-bottom:3px solid var(--cc);box-shadow:0 0 40px color-mix(in srgb,var(--cc) 60%,transparent);
+  animation:ci-band .32s cubic-bezier(.2,.9,.3,1)}
+.cutin .ci-lines{position:absolute;left:-10%;right:-10%;top:24%;height:52%;transform:skewY(-7deg);opacity:.55;
+  background:repeating-linear-gradient(90deg,transparent 0 38px,rgba(255,255,255,.18) 38px 40px,transparent 40px 90px,rgba(255,255,255,.08) 90px 93px);
+  animation:ci-lines .5s linear infinite}
+.cutin .ci-art{position:absolute;right:4%;bottom:0;height:118%;max-width:60%;object-fit:contain;object-position:right bottom;
+  filter:drop-shadow(0 0 18px color-mix(in srgb,var(--cc) 70%,transparent)) drop-shadow(0 0 2px #fff);
+  -webkit-mask-image:linear-gradient(180deg,#000 75%,transparent);mask-image:linear-gradient(180deg,#000 75%,transparent);
+  animation:ci-art .55s cubic-bezier(.15,.85,.25,1)}
+.cutin .ci-txt{position:absolute;left:7%;top:50%;transform:translateY(-50%) skewY(-7deg);display:flex;flex-direction:column;align-items:flex-start;gap:4px;
+  animation:ci-txt .45s cubic-bezier(.15,.85,.25,1) .08s both}
+.cutin .ci-who{font-size:15px;font-weight:700;color:#fff;letter-spacing:.06em;display:flex;align-items:center;gap:6px;text-shadow:0 2px 6px #000}
+.cutin .ci-txt b{font-family:var(--serif);font-size:40px;font-weight:900;color:#fff;line-height:1.1;max-width:560px;
+  text-shadow:0 0 18px color-mix(in srgb,var(--cc) 80%,transparent),0 3px 0 rgba(0,0,0,.6)}
+.cutin .ci-txt small{font-size:12px;color:var(--cc);letter-spacing:.2em;font-weight:700}
+.cutin .ci-chain{font-size:13px;font-weight:900;color:#1a1204;background:var(--gold);padding:1px 10px;border-radius:3px;letter-spacing:.1em}
+.cutin.off{animation:ci-off .22s ease-in forwards}
+@keyframes ci-dim{from{opacity:0}}
+@keyframes ci-band{from{transform:skewY(-7deg) scaleY(0)}}
+@keyframes ci-lines{to{background-position:-186px 0}}
+@keyframes ci-art{from{transform:translateX(42%);opacity:0}60%{opacity:1}}
+@keyframes ci-txt{from{transform:translate(-30%,-50%) skewY(-7deg);opacity:0}}
+@keyframes ci-off{to{opacity:0;transform:scale(1.04)}}
+@media(prefers-reduced-motion:reduce){.cutin *,.ally.ult::after,.ally .bar.en.full i{animation:none!important}}
+.tlb .bt-round.low{color:var(--warn);font-weight:700}

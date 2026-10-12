@@ -3,7 +3,7 @@
   --bg:#0b0f17; --bg2:#121826; --panel:rgba(18,24,38,.86); --line:rgba(255,255,255,.1);
   --tx:#e9eef7; --tx2:#9aa6bb; --ac:#00ffcc; --ac2:#7a5cff; --warn:#ff5a7a; --gold:#ffd166;
   --ssr:#ffcf4a; --sr:#c38bff; --r:#7fb2ff;
-  --e-홍:#ff5a5a; --e-녹:#4fd18b; --e-청:#4fa3ff;
+  --e-신앙:#e9b23a; --e-망각:#9a72f0; --e-해석:#3fb4f0;
   --safe-t:env(safe-area-inset-top,0px); --safe-b:env(safe-area-inset-bottom,0px);
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -41,7 +41,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 .tag{display:inline-block;font-size:11px;padding:2px 7px;border-radius:999px;border:1px solid var(--line);color:var(--tx2)}
 .r3{color:var(--ssr)} .r2{color:var(--sr)} .r1{color:var(--r)}
 .el{display:inline-flex;width:20px;height:20px;border-radius:6px;align-items:center;justify-content:center;font-size:11px;font-weight:900;color:#0b0f17}
-.el-홍{background:var(--e-홍)} .el-녹{background:var(--e-녹)} .el-청{background:var(--e-청)}
+.el-신앙{background:var(--e-신앙)} .el-망각{background:var(--e-망각)} .el-해석{background:var(--e-해석)}
 .bar{height:6px;background:rgba(255,255,255,.1);border-radius:9px;overflow:hidden}
 .bar i{display:block;height:100%;background:var(--ac);border-radius:9px;transition:width .3s}
 .dot{position:absolute;top:4px;right:4px;width:9px;height:9px;border-radius:50%;background:var(--warn);box-shadow:0 0 0 2px var(--bg)}
@@ -54,7 +54,6 @@ img{user-select:none;-webkit-user-drag:none}
 /* boot / title */
 .boot{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:24px;text-align:center}
 .boot .logo{font-size:30px;font-weight:900;letter-spacing:.04em}
-.drop{border:2px dashed var(--line);border-radius:16px;padding:22px;width:100%}
 .title{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;padding:0 20px calc(60px + var(--safe-b));background-size:cover;background-position:center}
 .title::before{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(5,7,11,.1),rgba(5,7,11,.2) 50%,rgba(5,7,11,.95))}
 .title>*{position:relative}

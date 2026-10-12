@@ -36,7 +36,7 @@ export function newSave() {
     owned: {}, squad: [], cleared: {}, pity: {}, pulls: 0, history: [],
     threads: {}, disp: {}, mail: (p.mail || []).map(m => ({ ...m, got: false, read: false, at: Date.now() })),
     daily: { date: '', cnt: {}, got: {} }, pass: { month: '', xp: 0, got: [] },
-    farm: { date: '', n: {} }, shop: { date: '', buy: {} }, touch: { date: '', n: 0 },
+    farm: { date: '', n: {} }, farmTier: {}, codex: {}, shop: { date: '', buy: {} }, touch: { date: '', n: 0 },
     seenOpening: false, lobbyChar: '', firstTen: p.firstTen !== false,
     settings: { bgm: .5, sfx: .6, muted: false, auto: false, speed: 1, text: 28, fastDispatch: false },
   };
@@ -200,8 +200,28 @@ export function threadOpen(t) {
   if (tr.type === 'aff') { const o = S.owned[t.charId]; return !!o && o.aff >= (+tr.value || 0); }
   return true;
 }
+// ---- 팩션 도감 ----
+// 팩션마다 소속 사원을 모을수록 보상: 첫 만남 · 절반 · 전원
+export const factions = () => {
+  const list = (G.world?.factions || []).map(f => ({ ...f }));
+  for (const c of G.chars) if (c.faction && !list.some(f => f.name === c.faction)) list.push({ name: c.faction, desc: '' });
+  return list;
+};
+export const factionMembers = f => G.chars.filter(c => c.faction === f);
+export const factionOwned = f => factionMembers(f).filter(c => S.owned[c.id]).length;
+export function codexSteps(f) {
+  const n = factionMembers(f).length; if (!n) return [];
+  const needs = [...new Set([1, Math.ceil(n / 2), n])];
+  return needs.map((need, i) => ({
+    need, key: `${f}|${need}`, label: need === n ? '전원 영입' : i === 0 ? '첫 만남' : '절반 영입',
+    reward: need === n ? { gems: 300, core: 3 } : i === 0 ? { gems: 50, gold: 5000 } : { gems: 100, exp: 5 },
+  }));
+}
+export const codexClaimable = f => codexSteps(f).filter(s => factionOwned(f) >= s.need && !S.codex?.[s.key]);
+
 export function badges() {
   const b = {};
+  b.codex = factions().some(f => codexClaimable(f.name).length);
   b.mail = S.mail.some(m => !m.got);
   b.talk = (G.threads || []).some(t => threadOpen(t) && !S.threads[t.id]?.done);
   b.disp = Object.values(S.disp).some(d => Date.now() >= d.end);

@@ -1,0 +1,44 @@
+/* =========================================================
+   팩션 도감 · 상시정리 단계
+   ========================================================= */
+
+/* ---------- 팩션 도감: 왼쪽 세력 목록, 오른쪽 소개 · 보상 · 소속 사원 ---------- */
+#screen[data-s=codex] .body{display:grid;grid-template-columns:220px 1fr;column-gap:18px;align-items:start}
+.cx-list{display:flex;flex-direction:column;gap:6px;position:sticky;top:0}
+.cx-f{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:9px 12px 12px;border-radius:8px;text-align:left;overflow:hidden;
+  background:var(--paper);border:1px solid var(--line);box-shadow:var(--shadow);color:var(--tx)}
+.cx-f b{font-size:13.5px;font-family:var(--serif)}
+.cx-f small{font-size:11px;color:var(--tx2)}
+.cx-f i{position:absolute;left:0;bottom:0;height:3px;background:var(--navy)}
+.cx-f.on{border-color:var(--navy);box-shadow:0 0 0 2px var(--navy) inset,var(--shadow)}
+.cx-f.none{opacity:.6}
+.cx-f .dot{top:8px;right:8px}
+.cx-main>.card:first-child{margin-top:0}
+.cx-steps{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:8px 0}
+.cx-step{display:flex;flex-direction:column;gap:4px;padding:10px 12px;border-radius:8px;background:var(--paper);border:1px dashed var(--line);font-size:12px}
+.cx-step b{font-size:13px}
+.cx-step b small{font-weight:500;color:var(--tx2)}
+.cx-step span{color:var(--gold);font-weight:700}
+.cx-step em{font-style:normal;color:var(--tx2);font-size:11px}
+.cx-step.ok{border:1px solid var(--stamp);box-shadow:0 0 0 1px rgba(200,64,47,.15) inset}
+.cx-step.got{opacity:.55;border-style:solid;border-color:var(--line);box-shadow:none}
+.cx-step .btn{align-self:flex-start}
+.cx-mem{grid-template-columns:repeat(6,1fr)}
+.cc.cx-off img{filter:brightness(0) opacity(.55)}
+.cc.cx-off .cn{color:var(--tx2)}
+
+/* ---------- 상시정리: 던전마다 초급 · 중급 · 상급 ---------- */
+.farm{background:var(--paper);border:1px solid var(--line);box-shadow:var(--shadow);border-radius:8px;padding:10px 12px;margin:6px 0}
+.farm .fh{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.farm .fh .no{min-width:30px}
+.farm .fh .no .ic{width:26px;height:26px}
+.farm.lockd .ftiers{opacity:.45}
+.ftiers{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.ft{display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:8px 10px;border-radius:8px;text-align:left;background:var(--bg2);border:1px solid var(--line);color:var(--tx)}
+.ft b{font-size:13px;font-family:var(--serif)}
+.ft small{font-size:10.5px;color:var(--tx2)}
+.ft small.warn{color:var(--stamp);font-weight:700}
+.ft span{font-size:11px;color:var(--gold);font-weight:700;line-height:1.35}
+.ft.t1{border-top:3px solid #6d8fb8}.ft.t2{border-top:3px solid var(--stamp)}.ft.t0{border-top:3px solid #8aa77a}
+.ft.lockd{opacity:.5;border-style:dashed}
+.ft.done b{color:var(--navy)}

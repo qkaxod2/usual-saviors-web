@@ -44,7 +44,7 @@ export function modal(html, buttons = [{ label: '확인', value: true }]) {
 }
 export const confirmBox = (html, ok = '확인', no = '취소') => modal(html, [{ label: no, cls: 'sub', value: false }, { label: ok, value: true }]);
 
-// ---- 소리: 백업에 오디오가 있으면 그걸 쓰고, 없으면 짧은 합성음 ----
+// ---- 소리: 데이터에 오디오가 있으면 그걸 쓰고, 없으면 짧은 합성음 ----
 let AC = null, master = null;
 export const audio = { files: {}, bgmEl: null, bgmName: '', vol: { bgm: .5, sfx: .6 }, muted: false };
 function ac() {
