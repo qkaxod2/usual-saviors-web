@@ -302,7 +302,7 @@ const SCREENS = {
         return `<div class="farm ${left > 0 ? '' : 'lockd'}"><div class="fh"><span class="no">${ICON_EMO[f.key] ? ic(f.key) : '⚔️'}</span><b class="grow">${esc(f.name)}</b><span class="muted">오늘 ${left}/3</span></div>
           <div class="ftiers">${FARM_TIER.map((t, i) => { const open = i <= top, ok = tp >= t.rec;
             return `<button class="ft t${i} ${open ? '' : 'lockd'} ${i < top ? 'done' : ''}" data-act="farm" data-v="${f.key}:${i}"><b>${t.name}${i < top ? ' ✓' : ''}</b>
-              <small class="${open && !ok ? 'warn' : ''}">${open ? `권장 전투력 ${fmt(t.rec)} · 제한 ${t.limit}차례` : `🔒 ${FARM_TIER[i - 1].name}을 먼저 깨요`}</small>
+              <small class="${open && !ok ? 'warn' : ''}">${open ? `권장 ${fmt(t.rec)} · 제한 ${t.limit}차례` : `🔒 ${FARM_TIER[i - 1].name}을 먼저 깨요`}</small>
               <span>${esc(rewardText(farmReward(f.key, i)))}</span></button>`; }).join('')}</div></div>`;
       }).join('')}
     </div>`;
