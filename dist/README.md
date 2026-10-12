@@ -1,6 +1,6 @@
 # Usual Saviors 웹게임
 
-gacha-game-maker에서 만든 **Usual Saviors(이형업무록 일상편)** 데이터를 툴 없이 따로 돌리는 정적 웹게임이에요.
+**Usual Saviors(이형업무록 일상편)** 정적 웹게임이에요.
 빌드 과정이 없어서 폴더를 그대로 아무 정적 호스팅에 올리면 돼요.
 
 ## 들어 있는 것
@@ -15,25 +15,13 @@ gacha-game-maker에서 만든 **Usual Saviors(이형업무록 일상편)** 데�
 - 현장파견(실시간), 우편, 보급관(상점), 일일 임무, 근태패스(월간)
 - 기록실(세계관, 스토리 다시 보기), 설정(이름, 소리, 글자 속도, 세이브 내보내기/불러오기/초기화)
 
-스토리 스크립트는 툴 문법을 그대로 읽어요:
+스토리 스크립트 문법:
 `[배경: ]` `[음악: ]` `[음악 끝]` `[효과음: ]` `[효과: 흔들림/플래시/암전]` `[소품: ]` `[소품 끝]` `[톡: 이름]` … `[톡 끝]` `[CG: ]` `[CG 끝]` `[장소 텍스트]` `선택: A | B` `1) …` `2) …` `이름: 대사` `이름 [표정]: 대사`
 
-## 데이터 넣기
+## 게임 데이터
 
-**방법 1 — 배포용 (추천)**
-
-```bash
-python3 tools/convert.py 백업파일.json data
-```
-
-`data/game.json`과 `data/img/*.webp`(용량을 줄인 그림)가 만들어져요. 이 `data` 폴더째로 같이 올리면 바로 시작해요.
-WebP 변환에는 Pillow가 필요해요 (`pip install pillow`). 없으면 원본 그림을 그대로 저장해요.
-
-**방법 2 — 브라우저로 가져오기**
-
-`data` 폴더가 없으면 첫 화면에서 툴 백업 파일을 고르라고 나와요. 한 번 가져오면 그 브라우저(IndexedDB)에 저장돼요.
-
-툴에서 그림이나 대사를 고치면 백업을 새로 저장하고 다시 변환해서 올리면 돼요. 플레이어 진행 상황은 따로 저장돼서 그대로 남아요.
+캐릭터 · 스토리 · 적 · 배너 같은 게임 데이터는 `data/game.json` 하나에 들어 있고, 그림과 소리는 `data/img`, `data/audio`에 있어요.
+데이터를 고치면 이 파일을 직접 고쳐요. 플레이어 진행 상황은 브라우저에 따로 저장돼서 그대로 남아요.
 
 ## 실행 · 배포
 
@@ -47,24 +35,23 @@ WebP 변환에는 Pillow가 필요해요 (`pip install pillow`). 없으면 원�
 
 ```
 index.html            앱 껍데기
-css/style.css         화면 스타일
-js/main.js            시작 · 데이터 가져오기 화면
+css/*.css             화면 스타일 (battle.css: 전투 타임라인 · 컷인)
+js/main.js            시작
 js/data.js            게임 데이터 로딩 · 그림 찾기 · 속성 상성
 js/state.js           세이브 · 성장 공식 · 임무/패스 · 보상
 js/screens.js         로비 · 영입 · 사원 · 출격 · 메신저 · 파견 · 우편 · 상점 · 임무 · 기록 · 설정
-js/story.js           스토리 재생기 (툴 스크립트 문법)
-js/battle.js          턴제 전투
+js/story.js           스토리 재생기
+js/battle.js          타임라인 턴제 전투
 js/gacha.js           영입 확률 · 연출
-js/util.js            공용 도구 · 효과음(백업에 소리가 없으면 합성음)
+js/util.js            공용 도구 · 효과음(소리 파일이 없으면 합성음)
 sw.js                 오프라인 캐시
-tools/convert.py      백업 → data 변환
-data/                 변환된 게임 데이터 (지금 버전 포함)
+data/                 게임 데이터 (game.json · 그림 · 소리)
 ```
 
 ## 숫자 조절하기
 
-- 가챠 확률·천장: 툴의 설정값(`prog.settings` ssr/sr/pity)을 그대로 써요. 가격은 `js/gacha.js`의 `COST1`, `COST10`.
+- 가챠 확률·천장: `data/game.json`의 `prog.settings` ssr/sr/pity. 가격은 `js/gacha.js`의 `COST1`, `COST10`.
 - 성장 공식·재료 비용: `js/state.js`의 `stats`, `lvCost`, `limitCost`, `wCost`.
 - 임무·패스 보상: `js/state.js`의 `MISSIONS`, `PASS`.
 - 상점 품목: `js/screens.js`의 `shopItems`. 상시정리 보상·적: `farmReward`, `farmEnemies`.
-- 전투 공식: `js/battle.js`의 `dealDmg`, 스킬 효과는 `allyAct`.
+- 전투 공식: `js/battle.js`의 `dealDmg`, 역할 스킬은 `allyAct`, 필살기는 `doUlt`, 적 패턴은 `AI` · `INTENT`.

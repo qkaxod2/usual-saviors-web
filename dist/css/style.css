@@ -54,7 +54,6 @@ img{user-select:none;-webkit-user-drag:none}
 /* boot / title */
 .boot{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:24px;text-align:center}
 .boot .logo{font-size:30px;font-weight:900;letter-spacing:.04em}
-.drop{border:2px dashed var(--line);border-radius:16px;padding:22px;width:100%}
 .title{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;padding:0 20px calc(60px + var(--safe-b));background-size:cover;background-position:center}
 .title::before{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(5,7,11,.1),rgba(5,7,11,.2) 50%,rgba(5,7,11,.95))}
 .title>*{position:relative}

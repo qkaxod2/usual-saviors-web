@@ -1,20 +1,8 @@
-// 게임 데이터 로딩: data/game.json(변환본) 또는 브라우저에 가져온 백업(IndexedDB)
+// 게임 데이터 로딩: data/game.json
 import { audio } from './util.js';
 
 export let G = null;             // game 데이터 (meta, world, chars, chapters, lib, threads, opening, banners, dispatches, prog)
 const IMG = {};                  // 이미지 id → url
-const DB = 'usual-saviors', STORE = 'kv';
-
-function idb() {
-  return new Promise((res, rej) => {
-    const r = indexedDB.open(DB, 1);
-    r.onupgradeneeded = () => r.result.createObjectStore(STORE);
-    r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
-  });
-}
-async function kvGet(k) { const d = await idb(); return new Promise(r => { const q = d.transaction(STORE).objectStore(STORE).get(k); q.onsuccess = () => r(q.result); q.onerror = () => r(null); }); }
-async function kvSet(k, v) { const d = await idb(); return new Promise((r, j) => { const t = d.transaction(STORE, 'readwrite'); t.objectStore(STORE).put(v, k); t.oncomplete = () => r(); t.onerror = () => j(t.error); }); }
-export async function clearImported() { const d = await idb(); return new Promise(r => { const t = d.transaction(STORE, 'readwrite'); t.objectStore(STORE).clear(); t.oncomplete = () => r(); }); }
 
 function setup(game, imgUrls, audioUrls) {
   G = game;
@@ -25,49 +13,19 @@ function setup(game, imgUrls, audioUrls) {
   G.chars.sort((a, b) => (a.ord ?? 0) - (b.ord ?? 0));
 }
 
-// 1) 배포용 data/game.json  2) 브라우저에 저장한 백업  둘 다 없으면 false
+// data/game.json을 읽어요. 못 읽으면 false
 export async function loadGame() {
   try {
     const r = await fetch('data/game.json', { cache: 'no-cache' });
-    if (r.ok) {
-      const j = await r.json();
-      const pre = p => 'data/' + p;
-      const im = {}, au = {};
-      for (const [k, v] of Object.entries(j.assets?.img || {})) im[k] = pre(v);
-      for (const [k, v] of Object.entries(j.assets?.audio || {})) au[k] = pre(v);
-      setup(j.game, im, au);
-      return 'file';
-    }
-  } catch (e) { /* 파일 없음 */ }
-  try {
-    const game = await kvGet('game');
-    if (game) {
-      const blobs = (await kvGet('imgs')) || {}, auds = (await kvGet('auds')) || {};
-      const im = {}, au = {};
-      for (const [k, b] of Object.entries(blobs)) im[k] = URL.createObjectURL(b);
-      for (const [k, b] of Object.entries(auds)) au[k] = URL.createObjectURL(b);
-      setup(game, im, au);
-      return 'imported';
-    }
-  } catch (e) { console.warn(e); }
-  return false;
-}
-
-// 툴 백업 JSON 파일을 브라우저에 가져오기
-export async function importBackup(file, onProgress = () => { }) {
-  onProgress('파일 읽는 중…');
-  const text = await file.text();
-  onProgress('데이터 해석 중…');
-  const d = JSON.parse(text);
-  let game, images = {}, audios = {};
-  if (d.format === 'usual-saviors-web/1') { game = d.game; }
-  else if (d.game) { game = d.game; images = d.images || {}; audios = d.audios || {}; }
-  else throw new Error('백업 파일이 아니에요');
-  const imgs = {}, auds = {}; let i = 0; const n = Object.keys(images).length;
-  for (const [k, v] of Object.entries(images)) { imgs[k] = await (await fetch(v)).blob(); if (++i % 5 === 0) onProgress(`그림 정리 중 ${i}/${n}`); }
-  for (const [k, v] of Object.entries(audios)) auds[k] = await (await fetch(v)).blob();
-  onProgress('저장 중…');
-  await kvSet('game', game); await kvSet('imgs', imgs); await kvSet('auds', auds);
+    if (!r.ok) return false;
+    const j = await r.json();
+    const pre = p => 'data/' + p;
+    const im = {}, au = {};
+    for (const [k, v] of Object.entries(j.assets?.img || {})) im[k] = pre(v);
+    for (const [k, v] of Object.entries(j.assets?.audio || {})) au[k] = pre(v);
+    setup(j.game, im, au);
+    return true;
+  } catch (e) { console.warn(e); return false; }
 }
 
 // ---- 조회 도우미 ----

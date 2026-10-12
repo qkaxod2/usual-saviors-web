@@ -1,6 +1,6 @@
 // 화면들
 import { $, $$, esc, sfx, bgm, toast, modal, confirmBox, fmt, dur, sleep, setMuted, audio, pick } from './util.js';
-import { G, T, img, charById, charByName, standing, upper, libImg, bgCss, elems, roleName, rarName, fill, playerName, clearImported } from './data.js';
+import { G, T, img, charById, charByName, standing, upper, libImg, bgCss, elems, roleName, rarName, fill, playerName } from './data.js';
 import {
   S, save, give, rewardText, count, stats, power, capLv, lvCost, limitCost, wCost, canPay, pay, addAff, filesOpen,
   owned, squadChars, teamPower, allStages, stageOpen, threadOpen, badges, MISSIONS, PASS, PASS_STEP,
@@ -471,7 +471,6 @@ const SCREENS = {
       <div class="card"><b>세이브</b><p class="muted">진행 상황은 이 브라우저에 저장돼요. 다른 기기로 옮기려면 내보내기를 써요.</p>
         <div class="row"><button class="btn sub sm grow" data-act="exp">내보내기</button><button class="btn sub sm grow" data-act="imp">불러오기</button><button class="btn warn sm" data-act="reset">초기화</button></div>
         <input type="file" id="sf" accept=".json,.txt" hidden></div>
-      ${DATA_SRC === 'imported' ? '<div class="card"><b>게임 데이터</b><p class="muted">브라우저로 가져온 백업 데이터를 쓰고 있어요.</p><button class="btn sub sm" data-act="unimp">가져온 데이터 지우기</button></div>' : ''}
       <p class="muted" style="text-align:center">${esc(G.meta.title || '')} · Usual Saviors Web</p></div>`;
     bind({
       name() { S.name = $('#nm').value.trim(); save(); toast('저장했어요'); },
@@ -485,7 +484,6 @@ const SCREENS = {
       },
       imp() { const f = $('#sf'); f.onchange = async () => { try { importSave(await f.files[0].text()); toast('불러왔어요'); go('lobby'); } catch (e) { toast('불러오지 못했어요'); } }; f.click(); },
       async reset() { if (await confirmBox('<h3>처음부터 시작할까요?</h3><p class="muted">모든 진행 상황이 지워져요.</p>', '초기화')) { resetSave(); location.reload(); } },
-      async unimp() { if (await confirmBox('<h3>가져온 데이터를 지울까요?</h3>', '지우기')) { await clearImported(); location.reload(); } },
     });
   },
 };
@@ -515,8 +513,6 @@ const LICON = {
   compass: svg('<circle cx="12" cy="12" r="9"/><path d="m15.5 8.5-2 5-5 2 2-5z"/>'),
   arrow: svg('<path d="M5 12h14M13 6l6 6-6 6"/>'),
 };
-export let DATA_SRC = 'file';
-export function setDataSrc(s) { DATA_SRC = s; }
 
 // ---------- 보조 ----------
 function viewImg(u) {

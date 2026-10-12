@@ -53,7 +53,7 @@ function makeAlly(c) {
   const rsk = ROLE_SK[c.role] || ROLE_SK.atk;
   return { side: 'a', c, name: c.name, elem: c.elem, role: c.role, ...s, mhp: s.hp, ult, rsk, cost: rsk.cost, en: ULT_START, shield: 0, buf: 0, bufT: 0, shT: 0, tauntT: 0, av: 0 };
 }
-// 툴에서 다시 변환해 ai가 빠져도 이야기 에너미는 제 패턴을 쓰게 해요
+// 데이터에 ai가 없어도 이야기 에너미는 제 패턴을 쓰게 해요
 const NAME_AI = { '청소부': 'swarm', '청소부 킹': 'king' };
 function makeFoe(e, scale) {
   const k = scale || 1;
