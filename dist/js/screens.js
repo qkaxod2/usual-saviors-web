@@ -53,7 +53,7 @@ function bind(handlers) {
 }
 const ph = (c, cls = '') => `<div class="ph ${cls}" style="width:100%;height:100%">${esc(c?.name?.[0] || '?')}</div>`;
 const thumb = c => upper(c) ? `<img src="${upper(c)}" alt="${esc(c.name)}" loading="lazy">` : ph(c);
-const elTag = e => `<span class="el el-${esc(e)}">${esc(e)}</span>`;
+const elTag = e => `<span class="el el-${esc(e)}" title="${esc(e)}">${esc(String(e || '')[0] || '')}</span>`;
 const matLine = () => `<div class="res" style="flex-wrap:wrap;margin:4px 0"><span>${ic('exp')} ${T('expMat')} <b>${S.mat.exp}</b></span><span>${ic('wmat')} ${T('wMat')} <b>${S.mat.wmat}</b></span><span>${ic('core')} ${T('core')} <b>${S.mat.core}</b></span></div>`;
 
 const SCREENS = {

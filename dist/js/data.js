@@ -79,15 +79,14 @@ export const libByName = (kind, name) => (G.lib || []).find(l => (!kind || l.kin
 export const libImg = (kind, name) => { const l = libByName(kind, name); return l ? img(l.id) : null; };
 export const standing = c => img(c.id);
 export const upper = c => img(c.upper?.id) || img(c.id);
-export const elems = () => (G.meta.elems && G.meta.elems.length ? G.meta.elems : [{ n: '홍' }, { n: '녹' }, { n: '청' }]).map(e => e.n);
+// 속성 세 갈래: 신앙 → 망각 → 해석 → 신앙 (앞이 뒤에 강해요)
+export const elems = () => (G.meta.elems && G.meta.elems.length ? G.meta.elems : [{ n: '신앙' }, { n: '망각' }, { n: '해석' }]).map(e => e.n);
 export const roleName = r => (G.meta.roles && G.meta.roles[r]) || r;
 export const rarName = r => ['', 'R', 'SR', 'SSR'][r] || 'R';
 export function elemMult(a, d) {
   const E = elems(), i = E.indexOf(a), j = E.indexOf(d);
   if (i < 0 || j < 0) return 1;
-  if ((i + 1) % E.length === j) return 1.3;
-  if ((j + 1) % E.length === i) return 0.8;
-  return 1;
+  return (i + 1) % E.length === j ? 1.3 : 1; // 불리해도 손해는 없어요
 }
 // 배경: 라이브러리 배경 그림이 있으면 그것, 없으면 이름으로 만든 그라디언트
 export function bgCss(name) {
