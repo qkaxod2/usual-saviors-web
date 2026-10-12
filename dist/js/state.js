@@ -9,6 +9,24 @@ export let S = null;
 let rev = 0, lastJson = '', onSync = () => { };
 export const setOnSync = f => { onSync = f; };
 
+// ---- 중복 접속 막기 ----
+// 게임은 한 번에 한 창에서만 진행해요. 새 창이 열리면 그 창이 주인이 되고, 이전 창은 멈춰서 저장하지 않아요.
+const ACTIVE = 'usual-saviors-active';
+const TAB = Math.random().toString(36).slice(2) + Date.now().toString(36);
+let active = true, onKicked = () => { };
+export const setOnKicked = f => { onKicked = f; };
+export const isActive = () => active;
+const ownerNow = () => { try { return localStorage.getItem(ACTIVE)?.split('|')[0]; } catch (e) { return TAB; } };
+// 이 창을 주인으로 정해요 (시작할 때. '여기서 계속하기'는 새로고침해서 다시 시작해요)
+export function claim() { try { localStorage.setItem(ACTIVE, TAB + '|' + Date.now()); } catch (e) { } }
+// 다른 창이 주인이 됐는지 확인하고, 그렇다면 이 창을 멈춰요. 멈췄으면 true
+export function checkOwner() {
+  if (!active) return true;
+  const o = ownerNow();
+  if (o && o !== TAB) { active = false; onKicked(); return true; }
+  return false;
+}
+
 export function newSave() {
   const p = G.prog || {};
   return {
@@ -57,7 +75,7 @@ export function sync() {
   return false;
 }
 export function save(force) {
-  if (!S) return;
+  if (!S || checkOwner()) return;
   if (!force && sync()) { toast('다른 창에서 진행한 내용을 불러왔어요'); return; }
   const cur = readSlot(KEY) || null;  // 깨진 세이브는 없는 것처럼 덮어써요 (load에서 따로 남겨 둠)
   const json = JSON.stringify(S);
@@ -75,7 +93,8 @@ export function save(force) {
 }
 // 다른 창에서 저장하면 바로 따라가요. 예전 코드로 열린 창이 번호 없이 옛 진행 상황을 덮어쓰면 되돌려 놓아요.
 if (typeof addEventListener === 'function') addEventListener('storage', e => {
-  if (e.key !== KEY || !S) return;
+  if (e.key === ACTIVE) { checkOwner(); return; }
+  if (e.key !== KEY || !S || !active) return;
   if (e.newValue == null) return;
   let j = null; try { j = JSON.parse(e.newValue); } catch (err) { }
   const r = j?.rev || 0;
