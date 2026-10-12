@@ -14,6 +14,9 @@ button{font:inherit;color:inherit;cursor:pointer}
 #ov,#modal{position:absolute;inset:0;z-index:20}
 #modal{z-index:40;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:16px}
 #ov[hidden],#modal[hidden]{display:none}
+#kicked{position:absolute;inset:0;z-index:100;background:rgba(0,0,0,.72);display:flex;align-items:center;justify-content:center;padding:16px;text-align:center}
+#kicked .mbox{max-width:420px}
+#kicked .acts{justify-content:center}
 #toast{position:absolute;left:50%;bottom:calc(90px + var(--safe-b));transform:translateX(-50%);z-index:60;pointer-events:none;display:flex;flex-direction:column;gap:6px;align-items:center}
 #toast .t{background:rgba(10,14,22,.92);border:1px solid var(--line);padding:8px 14px;border-radius:999px;font-size:13px;animation:tin .25s ease-out}
 @keyframes tin{from{opacity:0;transform:translateY(8px)}}
