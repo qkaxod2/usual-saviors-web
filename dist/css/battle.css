@@ -61,3 +61,4 @@
 @keyframes ci-txt{from{transform:translate(-30%,-50%) skewY(-7deg);opacity:0}}
 @keyframes ci-off{to{opacity:0;transform:scale(1.04)}}
 @media(prefers-reduced-motion:reduce){.cutin *,.ally.ult::after,.ally .bar.en.full i{animation:none!important}}
+.tlb .bt-round.low{color:var(--warn);font-weight:700}

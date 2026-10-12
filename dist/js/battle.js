@@ -63,7 +63,7 @@ function makeFoe(e, scale) {
 }
 const cutArt = c => img(c.pose?.id) || upper(c) || standing(c);
 
-// opt: {title, bg, enemies, squad(chars), scale, music}
+// opt: {title, bg, enemies, squad(chars), scale, music, limit(제한 차례 수, 넘기면 패배)}
 export function runBattle(opt) {
   return new Promise(resolve => {
     const A = opt.squad.map(makeAlly), E = opt.enemies.map(e => makeFoe(e, opt.scale));
@@ -183,7 +183,9 @@ export function runBattle(opt) {
     }
 
     function drawOrder() {
-      $('#btRound', ov).textContent = turns ? `${turns}번째 차례` : '';
+      const r = $('#btRound', ov);
+      if (opt.limit) { const left = opt.limit - turns; r.textContent = `남은 차례 ${Math.max(0, left)}`; r.classList.toggle('low', left <= 8); }
+      else r.textContent = turns ? `${turns}번째 차례` : '';
       const fc = forecast();
       const q = ultQ.filter(a => a.hp > 0);
       const face = u => u.side === 'a' ? (upper(u.c) || standing(u.c)) : libImg('enemy', u.name);
@@ -541,6 +543,7 @@ export function runBattle(opt) {
     function settled() {
       if (!alive(E).length) { end(true); return true; }
       if (!alive(A).length) { end(false); return true; }
+      if (opt.limit && turns >= opt.limit) { end(false, '시간 초과…'); return true; }
       return false;
     }
     async function loop() {
@@ -573,14 +576,14 @@ export function runBattle(opt) {
         if (settled()) return;
       }
     }
-    async function end(win) {
+    async function end(win, why) {
       if (over) return; over = true;
       sfx(win ? 'win' : 'lose'); acting = null; drawAll();
-      banner(`<span class="sk">${win ? '승리!' : '패배…'}</span>`, true);
-      log(win ? '<span class="hl">승리!</span>' : '패배…');
+      banner(`<span class="sk">${win ? '승리!' : why || '패배…'}</span>`, true);
+      log(win ? '<span class="hl">승리!</span>' : why || '패배…');
       await sleep(fast() ? 700 : 1300);
       ov.hidden = true; ov.innerHTML = '';
-      resolve({ win, rounds: turns, alive: alive(A).map(a => a.c.id) });
+      resolve({ win, rounds: turns, why, alive: alive(A).map(a => a.c.id) });
     }
     $('#foes', ov).onclick = e => { const f = e.target.closest('[data-f]'); if (!f) return; const t = E[+f.dataset.f]; if (t.hp > 0) { target = t; drawFoes(); $('#cmd', ov).redraw?.(); sfx('btn'); } };
     $('#allies', ov).onclick = e => {

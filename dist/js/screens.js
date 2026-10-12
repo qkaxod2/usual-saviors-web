@@ -302,7 +302,7 @@ const SCREENS = {
         return `<div class="farm ${left > 0 ? '' : 'lockd'}"><div class="fh"><span class="no">${ICON_EMO[f.key] ? ic(f.key) : '⚔️'}</span><b class="grow">${esc(f.name)}</b><span class="muted">오늘 ${left}/3</span></div>
           <div class="ftiers">${FARM_TIER.map((t, i) => { const open = i <= top, ok = tp >= t.rec;
             return `<button class="ft t${i} ${open ? '' : 'lockd'} ${i < top ? 'done' : ''}" data-act="farm" data-v="${f.key}:${i}"><b>${t.name}${i < top ? ' ✓' : ''}</b>
-              <small class="${open && !ok ? 'warn' : ''}">${open ? `권장 전투력 ${fmt(t.rec)}` : `🔒 ${FARM_TIER[i - 1].name}을 먼저 깨요`}</small>
+              <small class="${open && !ok ? 'warn' : ''}">${open ? `권장 전투력 ${fmt(t.rec)} · 제한 ${t.limit}차례` : `🔒 ${FARM_TIER[i - 1].name}을 먼저 깨요`}</small>
               <span>${esc(rewardText(farmReward(f.key, i)))}</span></button>`; }).join('')}</div></div>`;
       }).join('')}
     </div>`;
@@ -349,8 +349,8 @@ const SCREENS = {
         if (!await needSquad()) return;
         const f = farms.find(x => x.key === key);
         if (tp < T0.rec && !await confirmBox(`<h3>${esc(f.name)} · ${T0.name}</h3><p class="muted">권장 전투력 ${fmt(T0.rec)}, 지금 편성은 ${fmt(tp)}이에요.<br>그래도 출격할까요?</p>`, '출격')) return;
-        const res = await runBattle({ title: `${f.name} · ${T0.name}`, bg: G.prog?.lobbyBg, enemies: farmEnemies(key, t), squad: squadChars() });
-        if (!res.win) { await modal('<h3>실패</h3><p class="muted">조금 더 육성하거나 아래 단계에서 재료를 모아 와요.</p>'); refresh(); return; }
+        const res = await runBattle({ title: `${f.name} · ${T0.name}`, bg: G.prog?.lobbyBg, enemies: farmEnemies(key, t), squad: squadChars(), limit: T0.limit });
+        if (!res.win) { await modal(`<h3>실패</h3><p class="muted">${res.why ? `제한 차례 ${T0.limit} 안에 정리하지 못했어요.<br>` : ''}조금 더 육성하거나 아래 단계에서 재료를 모아 와요.</p>`); refresh(); return; }
         S.farm.n[key] = (S.farm.n[key] || 0) + 1; count('battle'); afterBattle(res);
         const unlock = t === farmTop(key) && t < FARM_TIER.length - 1;
         S.farmTier = { ...(S.farmTier || {}), [key]: Math.max(farmTop(key), t + 1) };
@@ -572,9 +572,9 @@ function firstReward(s) { return { gems: s.reward, gold: 5000 + s.reward * 20, e
 function repeatReward(s) { return { gold: 2000 + s.reward * 20, exp: 2 }; }
 // 상시정리: 던전마다 초급 · 중급 · 상급. 앞 단계를 한 번 깨면 다음 단계가 열려요 (하루 횟수는 던전마다 3번, 단계와 상관없이)
 export const FARM_TIER = [
-  { name: '초급', rec: 4000, hp: 800, atk: 110, def: 30, mult: 1 },
-  { name: '중급', rec: 9000, hp: 3000, atk: 480, def: 90, mult: 2.2 },
-  { name: '상급', rec: 15000, hp: 7000, atk: 900, def: 150, mult: 4, boss: true },
+  { name: '초급', rec: 4000, hp: 800, atk: 110, def: 30, mult: 1, limit: 40 },
+  { name: '중급', rec: 9000, hp: 3000, atk: 480, def: 90, mult: 2.2, limit: 40 },
+  { name: '상급', rec: 15000, hp: 7000, atk: 900, def: 150, mult: 4, boss: true, limit: 60 },
 ];
 const FARM_BASE = { exp: { exp: 6, gold: 3000 }, gold: { gold: 20000 }, wmat: { wmat: 5, gold: 3000 }, core: { core: 2, gold: 3000 } };
 function farmReward(k, t = 0) {
