@@ -35,6 +35,8 @@ export function go(name, arg) {
   scr().scrollTop = 0;
 }
 const refresh = () => go(current, currentArg);
+// 다른 창에서 저장한 진행 상황을 불러왔을 때 지금 화면을 다시 그려요
+export function redraw() { if (current !== 'title') refresh(); }
 
 const ICON_NAME = { gems: '신앙 토큰 아이콘', gold: '크레딧 아이콘', exp: '업무 일지 아이콘', wmat: '에테르 합금 아이콘', core: '존재 증명핵 아이콘' };
 const ICON_EMO = { gems: '💎', gold: '🪙', exp: '📒', wmat: '⚙️', core: '💠' };

@@ -1,7 +1,7 @@
 import { $, esc, toast, setMuted, audio } from './util.js';
 import { loadGame, importBackup, G } from './data.js';
-import { load, S, save } from './state.js';
-import { go, setDataSrc } from './screens.js';
+import { load, S, save, sync, setOnSync } from './state.js';
+import { go, setDataSrc, redraw } from './screens.js';
 
 // 가로 16:9 화면(960×540)을 창 크기에 맞춰 늘리고 줄여요
 function fitStage() {
@@ -19,8 +19,12 @@ async function boot() {
   load();
   audio.vol.bgm = S.settings.bgm ?? .5; audio.vol.sfx = S.settings.sfx ?? .6; setMuted(!!S.settings.muted);
   go('title');
+  setOnSync(redraw);
   setInterval(() => save(), 30000);
-  document.addEventListener('visibilitychange', () => { if (document.hidden) save(); });
+  // 화면을 떠날 때는 저장, 돌아오면 다른 창에서 저장한 게 있는지 먼저 확인해요
+  document.addEventListener('visibilitychange', () => { if (document.hidden) save(); else sync(); });
+  addEventListener('pagehide', () => save());
+  addEventListener('pageshow', e => { if (e.persisted) sync(); });
 }
 
 function showImport() {

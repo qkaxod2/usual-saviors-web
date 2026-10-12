@@ -2,8 +2,12 @@
 import { G, charById, T } from './data.js';
 import { today, toast } from './util.js';
 
-const KEY = 'usual-saviors-save-v1';
+const KEY = 'usual-saviors-save-v1', BAK = KEY + ':bak', BROKEN = KEY + ':broken';
 export let S = null;
+// 세이브마다 번호(rev)를 붙여요. 이 창이 마지막으로 읽거나 쓴 번호보다 저장소 번호가 크면
+// 다른 창(탭)이 더 새로 저장한 거라, 덮어쓰지 않고 그쪽을 불러와요.
+let rev = 0, lastJson = '', onSync = () => { };
+export const setOnSync = f => { onSync = f; };
 
 export function newSave() {
   const p = G.prog || {};
@@ -19,16 +23,68 @@ export function newSave() {
     settings: { bgm: .5, sfx: .6, muted: false, auto: false, speed: 1, text: 28, fastDispatch: false },
   };
 }
+function fromJson(j) {
+  const d = newSave();
+  return Object.assign(d, j, { mat: { ...d.mat, ...j.mat }, settings: { ...d.settings, ...j.settings } });
+}
+// 저장소에서 읽기: 없으면 null, 깨졌으면 false
+function readSlot(k) {
+  let t = null;
+  try { t = localStorage.getItem(k); } catch (e) { return null; }
+  if (!t) return null;
+  try { const j = JSON.parse(t); return j && j.v === 1 ? { j, t } : false; } catch (e) { return false; }
+}
+function adopt(slot) { S = fromJson(slot.j); rev = S.rev || 0; lastJson = slot.t; daily(); }
+
 export function load() {
-  try { const j = JSON.parse(localStorage.getItem(KEY)); if (j && j.v === 1) { S = Object.assign(newSave(), j); } } catch (e) { }
-  if (!S) S = newSave();
+  const main = readSlot(KEY);
+  if (main) adopt(main);
+  else {
+    // 본 세이브가 깨졌으면 지우지 않고 따로 남겨 두고, 직전 저장본으로 시작해요
+    if (main === false) try { localStorage.setItem(BROKEN, localStorage.getItem(KEY)); } catch (e) { }
+    const bak = readSlot(BAK);
+    if (bak) { adopt(bak); save(true); if (main === false) setTimeout(() => toast('세이브가 손상돼서 직전 저장본을 불러왔어요'), 800); }
+  }
+  if (!S) { S = newSave(); rev = 0; }
   daily();
+  try { navigator.storage?.persist?.(); } catch (e) { }
   return S;
 }
-export function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { toast('저장 공간이 부족해요'); } }
-export function resetSave() { localStorage.removeItem(KEY); S = newSave(); save(); }
+// 다른 창이 더 새로 저장했으면 그걸 불러와요. 불러왔으면 true
+export function sync() {
+  const cur = readSlot(KEY);
+  if (cur && (cur.j.rev || 0) > rev) { adopt(cur); onSync(); return true; }
+  return false;
+}
+export function save(force) {
+  if (!S) return;
+  if (!force && sync()) { toast('다른 창에서 진행한 내용을 불러왔어요'); return; }
+  const cur = readSlot(KEY) || null;  // 깨진 세이브는 없는 것처럼 덮어써요 (load에서 따로 남겨 둠)
+  const json = JSON.stringify(S);
+  if (!force && cur && json === lastJson && cur.t === lastJson) return;  // 바뀐 게 없어요
+  S.rev = Math.max(rev, cur?.j.rev || 0) + 1; S.savedAt = Date.now();
+  const out = JSON.stringify(S);
+  const write = () => { if (cur) localStorage.setItem(BAK, cur.t); localStorage.setItem(KEY, out); };
+  try { write(); }
+  catch (e) {
+    // 공간이 모자라면 직전 저장본을 비우고 한 번 더 시도해요
+    try { localStorage.removeItem(BAK); localStorage.setItem(KEY, out); }
+    catch (e2) { S.rev = rev; toast('저장 공간이 부족해서 저장하지 못했어요'); return; }
+  }
+  rev = S.rev; lastJson = out;
+}
+// 다른 창에서 저장하면 바로 따라가요. 예전 코드로 열린 창이 번호 없이 옛 진행 상황을 덮어쓰면 되돌려 놓아요.
+if (typeof addEventListener === 'function') addEventListener('storage', e => {
+  if (e.key !== KEY || !S) return;
+  if (e.newValue == null) return;
+  let j = null; try { j = JSON.parse(e.newValue); } catch (err) { }
+  const r = j?.rev || 0;
+  if (j && j.v === 1 && r > rev) { adopt({ j, t: e.newValue }); onSync(); }
+  else if (r < rev) save(true);
+});
+export function resetSave() { S = newSave(); save(true); }
 export function exportSave() { return JSON.stringify(S); }
-export function importSave(txt) { const j = JSON.parse(txt); if (j.v !== 1) throw new Error('세이브 형식이 달라요'); S = Object.assign(newSave(), j); save(); }
+export function importSave(txt) { const j = JSON.parse(txt); if (j.v !== 1) throw new Error('세이브 형식이 달라요'); S = fromJson(j); daily(); save(true); }
 
 // ---- 날짜 리셋 ----
 export function daily() {
