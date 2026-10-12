@@ -15,7 +15,7 @@ const SK_KIND = { dmg: '단일 공격', aoe: '적 전체 공격', heal: '아군 
 // 역할 스킬: 차례에 업무 포인트를 써서 쓰는 기술. 캐릭터 고유 스킬은 필살기가 돼요
 const ROLE_SK = {
   atk: { name: '집중 타격', cost: 2, kind: 'strike', desc: '단일 대상 강한 피해 · 흐트러짐 -2' },
-  def: { name: '막아서기', cost: 1, kind: 'cover', desc: '2턴 도발 · 자신에게 보호막' },
+  def: { name: '막아서기', cost: 2, kind: 'cover', desc: '2턴 도발 · 자신에게 보호막' },
   sup: { name: '업무 지원', cost: 1, kind: 'assist', desc: '가장 다친 아군 회복 · 행동 30% 당기기' },
 };
 const SP_MAX = 5, SP_START = 3;
@@ -318,7 +318,7 @@ export function runBattle(opt) {
           log(`${nm(a)}의 「${esc(a.rsk.name)}」 → ${nm(e)} ${showHit(e, r)}`);
           wear(e, breakAmt(a, e, 2));
         } else if (k === 'cover') {
-          a.tauntT = 2; a.shield = Math.max(a.shield, Math.round(a.def * 3)); a.shT = 2;
+          a.tauntT = 2; a.shield = Math.max(a.shield, Math.round(a.def * 2)); a.shT = 2;
           drawAllies(); popup(allyEl(a), `도발<small>🛡 ${n0(a.shield)}</small>`, 'heal');
           alive(E).forEach(e => { if (e.intent?.target) intentTarget(e); });
           log(`${nm(a)}이(가) 앞을 막아서요 <span class="ex">(2턴 도발, 보호막 ${n0(a.shield)})</span>`);
