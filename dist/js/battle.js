@@ -11,7 +11,7 @@ const n0 = n => Math.round(n).toLocaleString('ko-KR');
 const FOE_ICON = ['👾', '🕷️', '⚙️', '🦇', '👁️', '🌀', '🐺', '💀'];
 const foeIcon = n => { let h = 0; for (const ch of n) h = (h * 7 + ch.charCodeAt(0)) % 997; return FOE_ICON[h % FOE_ICON.length]; };
 
-const SK_KIND = { dmg: '단일 공격', aoe: '적 전체 공격', heal: '아군 전체 회복', shield: '아군 전체 보호막', buff: '아군 전체 공격력 증가 · 행동 당기기', debuff: '적 전체 매료 · 행동 밀기', mark: '대상 조준 · 약점 노출 · 행동 밀기', scale: '아군 전체 보호막 · 공격력 증가' };
+const SK_KIND = { dmg: '단일 공격', aoe: '적 전체 공격', heal: '아군 전체 회복', shield: '아군 전체 보호막', buff: '아군 전체 공격력 증가 · 행동 당기기', debuff: '적 전체 매료 · 행동 밀기', mark: '대상 조준 · 약점 노출 · 행동 밀기', scale: '아군 전체 보호막 · 공격력 증가', mend: '아군 전체 회복 · 자신 체력 소모' };
 // 역할 스킬: 차례에 업무 포인트를 써서 쓰는 기술. 캐릭터 고유 스킬은 필살기가 돼요
 const ROLE_SK = {
   atk: { name: '집중 타격', cost: 2, kind: 'strike', desc: '단일 대상 강한 피해 · 흐트러짐 -2' },
@@ -377,6 +377,12 @@ export function runBattle(opt) {
         const h = Math.round(a.atk * p * 1.1);
         for (const x of alive(A)) { const got = Math.min(x.mhp - x.hp, h); x.hp += got; drawAllies(); popup(allyEl(x), '+' + n0(got), 'heal'); }
         log(`${nm(a)}의 「${esc(sk.name)}」 → 아군 전체 <span class="hl">체력 ${n0(h)} 회복</span>`);
+      } else if (k === 'mend') {
+        // 불완전한 그릇의 치유: 회복량이 크지만, 쓸 때마다 자기 체력이 깎여요 (쓰러지지는 않아요)
+        const h = Math.round(a.atk * p * 1.35), cost = Math.min(a.hp - 1, Math.round(a.mhp * (sk.selfCost || 0.12)));
+        for (const x of alive(A)) { if (x === a) continue; const got = Math.min(x.mhp - x.hp, h); x.hp += got; popup(allyEl(x), '+' + n0(got), 'heal'); }
+        a.hp -= cost; drawAllies(); if (cost > 0) popup(allyEl(a), `-${n0(cost)}<small>반동</small>`, 'toa');
+        log(`${nm(a)}의 「${esc(sk.name)}」 → 아군 전체 <span class="hl">체력 ${n0(h)} 회복</span> · 반동으로 자신 체력 ${n0(cost)} 소모`);
       } else if (k === 'shield') {
         const sh = Math.round(a.def * p * 1.6);
         for (const x of alive(A)) { x.shield = Math.max(x.shield, sh); x.shT = 2; }
@@ -511,6 +517,7 @@ export function runBattle(opt) {
     function aiUlt(a) {
       const k = a.ult.kind;
       if (k === 'heal') return alive(A).some(x => x.hp / x.mhp < 0.6);
+      if (k === 'mend') return a.hp / a.mhp > 0.3 && alive(A).some(x => x !== a && x.hp / x.mhp < 0.6);
       if (k === 'shield' || k === 'scale') return alive(A).some(x => !x.shield && incoming(x) > x.hp * 0.2) || (k === 'scale' && !alive(A).some(x => x.bufT));
       if (k === 'buff') return !alive(A).some(x => x.bufT);
       if (k === 'mark') return !alive(E).some(e => e.markT);
