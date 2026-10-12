@@ -4,6 +4,7 @@ import { G, T, img, charById, charByName, standing, upper, libImg, bgCss, elems,
 import {
   S, save, give, rewardText, count, stats, power, capLv, lvCost, limitCost, wCost, canPay, pay, addAff, filesOpen,
   owned, squadChars, teamPower, allStages, stageOpen, threadOpen, badges, MISSIONS, PASS, PASS_STEP,
+  factions, factionMembers, factionOwned, codexSteps, codexClaimable,
   MAX_LIMIT, MAX_WLV, MAX_AFF, MAX_DUP, resetSave, exportSave, importSave, addChar,
 } from './state.js';
 import { playStory, playLines, parseScript } from './story.js';
@@ -98,7 +99,7 @@ const SCREENS = {
         ${resBar()}
       </div>
       <nav class="lside">
-        ${[['mail', 'mail', '우편', b.mail], ['missions', 'task', '임무', b.mission], ['shop', 'shop', G.meta.shop?.name || '상점'], ['records', 'book', '기록'], ['settings', 'gear', '설정']]
+        ${[['mail', 'mail', '우편', b.mail], ['missions', 'task', '임무', b.mission], ['shop', 'shop', G.meta.shop?.name || '상점'], ['codex', 'flag', '도감', b.codex], ['records', 'book', '기록'], ['settings', 'gear', '설정']]
           .map(([g, i, n, d]) => `<button data-go="${g}" aria-label="${esc(n)}">${LICON[i]}<span>${esc(n)}</span>${d ? '<span class="dot"></span>' : ''}</button>`).join('')}
       </nav>
       <div id="bub"></div>
@@ -296,7 +297,14 @@ const SCREENS = {
       ${tab === 'story' ? (G.chapters || []).map(ch => `<h3 style="margin:14px 0 4px;font-size:15px">${esc(ch.title)}</h3>${chMap(ch)}${ch.stages.map(s => {
         const op = stageOpen(s.id), dn = !!S.cleared[s.id];
         return `<button class="stage ${dn ? 'done' : ''} ${op ? '' : 'lockd'}" data-act="stage" data-v="${s.id}"><span class="no">${esc(s.title.split(/[.\s]/)[0])}</span><span class="grow">${esc(s.title.replace(/^[\d-]+\.\s*/, ''))}<br><span class="muted">${s.enemies.length ? s.enemies.map(e => `${e.name}${e.boss ? ' 👑' : ''}`).join(', ') : '스토리'}</span></span>${dn ? '' : `<span class="rw">${ic('gems')}${s.reward}</span>`}</button>`;
-      }).join('')}`).join('') : farms.map(f => { const left = 3 - (S.farm.n[f.key] || 0); return `<button class="stage ${left > 0 ? '' : 'lockd'}" data-act="farm" data-v="${f.key}"><span class="no">${ICON_EMO[f.key] ? ic(f.key) : '⚔️'}</span><span class="grow">${esc(f.name)}<br><span class="muted">${esc(rewardText(farmReward(f.key)))}</span></span><span class="muted">오늘 ${left}/3</span></button>`; }).join('')}
+      }).join('')}`).join('') : farms.map(f => {
+        const left = 3 - (S.farm.n[f.key] || 0), top = farmTop(f.key);
+        return `<div class="farm ${left > 0 ? '' : 'lockd'}"><div class="fh"><span class="no">${ICON_EMO[f.key] ? ic(f.key) : '⚔️'}</span><b class="grow">${esc(f.name)}</b><span class="muted">오늘 ${left}/3</span></div>
+          <div class="ftiers">${FARM_TIER.map((t, i) => { const open = i <= top, ok = tp >= t.rec;
+            return `<button class="ft t${i} ${open ? '' : 'lockd'} ${i < top ? 'done' : ''}" data-act="farm" data-v="${f.key}:${i}"><b>${t.name}${i < top ? ' ✓' : ''}</b>
+              <small class="${open && !ok ? 'warn' : ''}">${open ? `권장 전투력 ${fmt(t.rec)}` : `🔒 ${FARM_TIER[i - 1].name}을 먼저 깨요`}</small>
+              <span>${esc(rewardText(farmReward(f.key, i)))}</span></button>`; }).join('')}</div></div>`;
+      }).join('')}
     </div>`;
     bind({
       edit: () => squadEdit().then(refresh),
@@ -334,14 +342,20 @@ const SCREENS = {
         } else { const rw = repeatReward(s); give(rw, true); await modal(`<h3>작전 성공!</h3><p>${esc(rewardText(rw))}</p>`); }
         refresh();
       },
-      async farm(key) {
+      async farm(v) {
+        const [key, ti] = v.split(':'), t = +ti || 0, T0 = FARM_TIER[t];
         if ((S.farm.n[key] || 0) >= 3) { toast('오늘은 더 할 수 없어요'); return; }
+        if (t > farmTop(key)) { toast(`${FARM_TIER[t - 1].name}을 먼저 깨요`); return; }
         if (!await needSquad()) return;
         const f = farms.find(x => x.key === key);
-        const res = await runBattle({ title: f.name, bg: G.prog?.lobbyBg, enemies: farmEnemies(key), squad: squadChars() });
-        if (!res.win) { await modal('<h3>실패</h3><p class="muted">조금 더 육성한 뒤에 와요.</p>'); refresh(); return; }
+        if (tp < T0.rec && !await confirmBox(`<h3>${esc(f.name)} · ${T0.name}</h3><p class="muted">권장 전투력 ${fmt(T0.rec)}, 지금 편성은 ${fmt(tp)}이에요.<br>그래도 출격할까요?</p>`, '출격')) return;
+        const res = await runBattle({ title: `${f.name} · ${T0.name}`, bg: G.prog?.lobbyBg, enemies: farmEnemies(key, t), squad: squadChars() });
+        if (!res.win) { await modal('<h3>실패</h3><p class="muted">조금 더 육성하거나 아래 단계에서 재료를 모아 와요.</p>'); refresh(); return; }
         S.farm.n[key] = (S.farm.n[key] || 0) + 1; count('battle'); afterBattle(res);
-        const rw = farmReward(key); give(rw, true); await modal(`<h3>정리 완료!</h3><p>${esc(rewardText(rw))}</p>`); refresh();
+        const unlock = t === farmTop(key) && t < FARM_TIER.length - 1;
+        S.farmTier = { ...(S.farmTier || {}), [key]: Math.max(farmTop(key), t + 1) };
+        const rw = farmReward(key, t); give(rw, true);
+        await modal(`<h3>정리 완료!</h3><p>${esc(rewardText(rw))}</p>${unlock ? `<p class="muted">${FARM_TIER[t + 1].name}이 열렸어요!</p>` : ''}`); refresh();
       },
     });
   },
@@ -448,12 +462,41 @@ const SCREENS = {
     scr().innerHTML = header('기록') + `<div class="body"><div class="tabs"><button class="${tab === 'world' ? 'on' : ''}" data-go="records:world">세계관</button><button class="${tab === 'story' ? 'on' : ''}" data-go="records:story">스토리 다시 보기</button></div>
       ${tab === 'world' ? `<div class="card"><b>${esc(w.name || '')}</b><p style="font-size:14px;line-height:1.75">${esc(w.summary || '')}</p></div>
         ${w.lore ? `<div class="card"><b>배경</b><p style="font-size:14px;line-height:1.75;white-space:pre-wrap">${esc(w.lore)}</p></div>` : ''}
-        ${(w.factions || []).map(f => `<div class="card"><b>${esc(f.name)}</b><p class="muted" style="margin:6px 0 0;line-height:1.6">${esc(f.desc)}</p></div>`).join('')}`
+        <button class="stage" data-go="codex"><span class="no">⚑</span><span class="grow">팩션 도감<br><span class="muted">세력 소개와 소속 사원 모으기</span></span></button>`
         : `${G.opening?.prologue ? '<button class="stage" data-act="pro"><span class="no">✦</span><span class="grow">프롤로그</span></button>' : ''}
         ${cleared.map(({ s }) => `<button class="stage" data-act="st" data-v="${s.id}"><span class="no">▶</span><span class="grow">${esc(s.title)}</span></button>`).join('') || '<p class="muted">작전을 끝내면 여기서 다시 볼 수 있어요.</p>'}`}</div>`;
     bind({
       async pro() { await playStory('프롤로그', G.opening?.prologue); refresh(); },
       async st(id) { const { s } = allStages().find(x => x.s.id === id); await playStory(s.title, s.pre); await playStory(s.title, s.post); refresh(); },
+    });
+  },
+
+  // ============ 팩션 도감 ============
+  codex(sel) {
+    const fs = factions().map(f => ({ ...f, n: factionMembers(f.name).length, got: factionOwned(f.name) }))
+      .sort((x, y) => (y.n > 0) - (x.n > 0));
+    const i = Math.min(Math.max(0, +sel || 0), fs.length - 1), f = fs[i];
+    const mem = f ? factionMembers(f.name).sort((x, y) => (!!S.owned[y.id] - !!S.owned[x.id]) || y.rarity - x.rarity) : [];
+    const steps = f ? codexSteps(f.name) : [];
+    scr().innerHTML = header('팩션 도감') + `<div class="body">
+      <div class="cx-list">${fs.map((x, k) => `<button class="cx-f ${k === i ? 'on' : ''} ${x.n ? '' : 'none'}" data-go="codex:${k}"><b>${esc(x.name)}</b><small>${x.n ? `${x.got} / ${x.n}` : '소속 사원 없음'}</small>${codexClaimable(x.name).length ? '<span class="dot"></span>' : ''}${x.n ? `<i style="width:${x.got / x.n * 100}%"></i>` : ''}</button>`).join('')}</div>
+      ${f ? `<div class="cx-main">
+        <div class="card"><div class="row"><b class="grow" style="font-size:18px;font-family:var(--serif)">${esc(f.name)}</b>${f.n ? `<span class="muted">영입 ${f.got} / ${f.n}</span>` : ''}</div>
+          ${f.desc ? `<p class="muted" style="margin:6px 0 0;line-height:1.6">${esc(f.desc)}</p>` : ''}</div>
+        ${f.n ? `<div class="cx-steps">${steps.map(st => { const ok = f.got >= st.need, got = !!S.codex?.[st.key];
+          return `<div class="cx-step ${ok ? 'ok' : ''} ${got ? 'got' : ''}"><b>${st.label} <small>(${st.need}명)</small></b><span>${esc(rewardText(st.reward))}</span>
+            ${got ? '<em>받음</em>' : ok ? `<button class="btn sm" data-act="claim" data-v="${esc(st.key)}">받기</button>` : `<em>${f.got} / ${st.need}</em>`}</div>`; }).join('')}</div>
+        <div class="grid cx-mem">${mem.map(c => { const o = S.owned[c.id];
+          return `<button class="cc ${o ? '' : 'off cx-off'}" ${o ? `data-go="char:${c.id}"` : 'data-act="unown"'}>${thumb(c)}<span class="cr r${c.rarity}">${rarName(c.rarity)}</span><span class="ce">${elTag(c.elem)}</span><span class="cn">${o ? esc(c.name) : '미영입'}</span></button>`; }).join('')}</div>`
+        : '<p class="muted">아직 이 세력 소속 사원은 없어요.</p>'}</div>` : ''}
+    </div>`;
+    bind({
+      claim(key) {
+        const st = steps.find(x => x.key === key); if (!st || S.codex?.[key] || f.got < st.need) return;
+        S.codex = { ...(S.codex || {}), [key]: Date.now() }; give(st.reward, true); sfx('up');
+        toast(`${f.name} · ${st.label}: ${rewardText(st.reward)}`); refresh();
+      },
+      unown() { toast('영입하면 여기에 모습이 드러나요'); },
     });
   },
 
@@ -512,6 +555,7 @@ const LICON = {
   chat: svg('<path d="M20 12a8 8 0 0 1-11.6 7.1L4 20l.9-4.1A8 8 0 1 1 20 12z"/><path d="M8.5 12h.01M12 12h.01M15.5 12h.01"/>'),
   compass: svg('<circle cx="12" cy="12" r="9"/><path d="m15.5 8.5-2 5-5 2 2-5z"/>'),
   arrow: svg('<path d="M5 12h14M13 6l6 6-6 6"/>'),
+  flag: svg('<path d="M5 21V4"/><path d="M5 4h11l-2 4 2 4H5"/>'),
 };
 
 // ---------- 보조 ----------
@@ -526,14 +570,28 @@ function squadScale() { return [0.45, 0.7, 0.85][squadChars().length - 1] || 1; 
 // 크레딧은 연수(레벨)에 계속 들어가서, 작전마다 넉넉히 줘요
 function firstReward(s) { return { gems: s.reward, gold: 5000 + s.reward * 20, exp: 3 }; }
 function repeatReward(s) { return { gold: 2000 + s.reward * 20, exp: 2 }; }
-function farmReward(k) { return { exp: { exp: 6, gold: 3000 }, gold: { gold: 20000 }, wmat: { wmat: 5, gold: 3000 }, core: { core: 2, gold: 3000 } }[k] || { gold: 8000 }; }
-function farmEnemies(k) {
-  const sq = squadChars(), n = Math.max(1, sq.length);
-  const avg = f => sq.reduce((a, c) => a + stats(c)[f], 0) / n;
+// 상시정리: 던전마다 초급 · 중급 · 상급. 앞 단계를 한 번 깨면 다음 단계가 열려요 (하루 횟수는 던전마다 3번, 단계와 상관없이)
+export const FARM_TIER = [
+  { name: '초급', rec: 4000, hp: 700, atk: 75, def: 30, mult: 1 },
+  { name: '중급', rec: 9000, hp: 1700, atk: 140, def: 60, mult: 2.2 },
+  { name: '상급', rec: 15000, hp: 3400, atk: 220, def: 95, mult: 4, boss: true },
+];
+const FARM_BASE = { exp: { exp: 6, gold: 3000 }, gold: { gold: 20000 }, wmat: { wmat: 5, gold: 3000 }, core: { core: 2, gold: 3000 } };
+function farmReward(k, t = 0) {
+  const base = FARM_BASE[k] || { gold: 8000 }, m = FARM_TIER[t].mult, out = {};
+  for (const [x, v] of Object.entries(base)) out[x] = x === 'gold' ? Math.round(v * m / 100) * 100 : Math.round(v * m);
+  return out;
+}
+const farmTop = k => S.farmTier?.[k] || 0; // 깬 가장 높은 단계 수 (0이면 아직 없음)
+export function farmEnemies(k, t = 0) {
+  const T0 = FARM_TIER[t];
   const names = (G.lib || []).filter(l => l.kind === 'enemy').map(l => l.name);
   const nm = i => names[i % Math.max(1, names.length)] || '훈련 표적';
   const E = elems();
-  return [0, 1, 2].map(i => ({ name: nm(i), elem: E[(i + k.length) % E.length], hp: Math.round(avg('hp') * 1.1), atk: Math.round(avg('atk') * 0.62), def: Math.round(avg('def') * 0.9), spd: 95 + i * 5, boss: i === 2 && k === 'core' }));
+  return [0, 1, 2].map(i => {
+    const boss = !!T0.boss && i === 2, b = boss ? 1.8 : 1;
+    return { name: nm(i), elem: E[(i + k.length) % E.length], hp: Math.round(T0.hp * b), atk: Math.round(T0.atk * (boss ? 1.15 : 1)), def: T0.def, spd: 95 + i * 5, boss };
+  });
 }
 function afterBattle(res) {
   const ups = [];
