@@ -11,7 +11,6 @@ const n0 = n => Math.round(n).toLocaleString('ko-KR');
 const FOE_ICON = ['👾', '🕷️', '⚙️', '🦇', '👁️', '🌀', '🐺', '💀'];
 const foeIcon = n => { let h = 0; for (const ch of n) h = (h * 7 + ch.charCodeAt(0)) % 997; return FOE_ICON[h % FOE_ICON.length]; };
 
-const SK_KIND = { dmg: '단일 공격', aoe: '적 전체 공격', heal: '아군 전체 회복', shield: '아군 전체 보호막', buff: '아군 전체 공격력 증가 · 행동 당기기', debuff: '적 전체 매료 · 행동 밀기', mark: '대상 조준 · 약점 노출 · 행동 밀기', scale: '아군 전체 보호막 · 공격력 증가', mend: '아군 전체 회복 · 자신 체력 소모' };
 // 역할 스킬: 차례에 업무 포인트를 써서 쓰는 기술. 캐릭터 고유 스킬은 필살기가 돼요
 const ROLE_SK = {
   atk: { name: '집중 타격', cost: 2, kind: 'strike', desc: '단일 대상 강한 피해 · 흐트러짐 -2' },
@@ -361,21 +360,34 @@ export function runBattle(opt) {
 
     // ---- 필살기: 컷인과 함께 언제든 끼어들어요 ----
     function cutIn(a, chain) {
-      const el = $('#cutin', ov), art = cutArt(a.c), cut = { ...CUT0, ...(a.c.cut || {}) };
-      el.className = `cutin c-${a.elem || ''}`;
+      const art = cutArt(a.c), cut = { ...CUT0, ...(a.c.cut || {}) };
       const pic = (fw, cx, cy) => art ? `<img src="${art}" alt="" style="${cutPos(cut, fw, cx, cy)}">` : '';
-      // 눈 띠(1100×150)는 눈을 꽉 채우고, 오른쪽 패널(440×360)은 얼굴과 어깨까지 보여줘요
-      el.innerHTML = `<div class="ci-bg"></div><div class="ci-dots"></div><div class="ci-rays"></div>
-        <div class="ci-eye"><div class="ci-eyein">${pic(430, 610, 75)}</div></div>
-        <div class="ci-bust"><div class="ci-bustin">${pic(220, 265, 115)}</div></div>
-        <div class="ci-txt">${chain ? '<span class="ci-chain">연계!</span>' : ''}<span class="ci-who"><span class="el el-${esc(a.elem)}">${esc(String(a.elem || '')[0] || '')}</span>${esc(a.name)}</span><b class="${a.ult.name.length > 11 ? 'long' : ''}">${esc(a.ult.name)}</b><small>${esc(SK_KIND[a.ult.kind] || '필살기')}</small></div>
-        <div class="ci-flash"></div>`;
+      const who = `<span class="el el-${esc(a.elem)}">${esc(String(a.elem || '')[0] || '')}</span>${esc(a.name)}`;
+      sfx('skill');
+      // 5배속: 멈추지 않고 캐릭터 카드 위에 눈 띠만 잠깐 띄워요
+      if (fast()) {
+        const bt = $('.battle', ov), card = allyEl(a);
+        if (!bt || !card) return Promise.resolve();
+        const k = bt.getBoundingClientRect().width / bt.offsetWidth || 1, br = bt.getBoundingClientRect(), r = card.getBoundingClientRect();
+        const w = r.width / k, x = (r.left - br.left) / k, y = (r.top - br.top) / k;
+        const d = document.createElement('div');
+        d.className = `cutmini c-${a.elem || ''}`;
+        d.style.cssText = `left:${x.toFixed(1)}px;top:${(y + r.height / k * .26).toFixed(1)}px;width:${w.toFixed(1)}px`;
+        d.innerHTML = `<div class="cm-eye">${pic(w * .78, w / 2 + 6, 19)}</div><b>${esc(a.ult.name)}</b>`;
+        bt.append(d); setTimeout(() => d.remove(), 1100);
+        return Promise.resolve();
+      }
+      // 보통 배속: 화면 가운데를 가로지르는 눈 띠 하나와 기술 이름
+      const el = $('#cutin', ov);
+      el.className = `cutin c-${a.elem || ''}`;
+      el.innerHTML = `<div class="ci-dim"></div>
+        <div class="ci-eye"><div class="ci-eyein">${pic(380, 600, 62)}</div></div>
+        <div class="ci-txt">${chain ? '<span class="ci-chain">연계!</span>' : ''}<span class="ci-who">${who}</span><b class="${a.ult.name.length > 11 ? 'long' : ''}">${esc(a.ult.name)}</b></div>`;
       void el.offsetWidth; el.classList.add('on');
-      sfx('flash'); setTimeout(() => sfx('skill'), 120);
-      const ms = fast() ? 650 : speed === 2 ? 1050 : 1400;
+      const ms = speed === 2 ? 700 : 950;
       return new Promise(res => {
         let done = false;
-        const fin = () => { if (done) return; done = true; el.onclick = null; el.classList.add('off'); setTimeout(() => { el.className = 'cutin'; el.innerHTML = ''; }, 220); res(); };
+        const fin = () => { if (done) return; done = true; el.onclick = null; el.classList.add('off'); setTimeout(() => { el.className = 'cutin'; el.innerHTML = ''; }, 180); res(); };
         el.onclick = fin; // 눌러서 넘기기
         setTimeout(fin, ms);
       });
