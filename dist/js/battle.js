@@ -11,7 +11,7 @@ const n0 = n => Math.round(n).toLocaleString('ko-KR');
 const FOE_ICON = ['👾', '🕷️', '⚙️', '🦇', '👁️', '🌀', '🐺', '💀'];
 const foeIcon = n => { let h = 0; for (const ch of n) h = (h * 7 + ch.charCodeAt(0)) % 997; return FOE_ICON[h % FOE_ICON.length]; };
 
-const SK_KIND = { dmg: '단일 공격', aoe: '적 전체 공격', heal: '아군 전체 회복', shield: '아군 전체 보호막', buff: '아군 전체 공격력 증가 · 행동 당기기', debuff: '적 전체 매료 · 행동 밀기', mark: '대상 조준 · 약점 노출 · 행동 밀기', scale: '아군 전체 보호막 · 공격력 증가', mend: '아군 전체 회복 · 자신 체력 소모' };
+const SK_KIND = { dmg: '단일 공격', aoe: '적 전체 공격', heal: '아군 전체 회복', shield: '아군 전체 보호막', buff: '아군 전체 공격력 증가 · 행동 당기기', debuff: '적 전체 매료 · 행동 밀기', mark: '대상 조준 · 약점 노출 · 행동 밀기', scale: '아군 전체 보호막 · 공격력 증가', mend: '아군 전체 회복 · 자신 체력 소모', origin: '자신 받는 피해 감소 · 흡혈 · 도발' };
 // 역할 스킬: 차례에 업무 포인트를 써서 쓰는 기술. 캐릭터 고유 스킬은 필살기가 돼요
 const ROLE_SK = {
   atk: { name: '집중 타격', cost: 2, kind: 'strike', desc: '단일 대상 강한 피해 · 흐트러짐 -2' },
@@ -160,6 +160,7 @@ export function runBattle(opt) {
       let d = src.atk * (1 + (src.buf || 0)) * mult * elemMult(src.elem, dst.elem) * (120 / (120 + dst.def));
       if (dst.side === 'a') {
         if (dst.role === 'def') d *= 0.85;
+        if (dst.origT) d *= 1 - (dst.origCut || 0); // 진조: 받는 피해 감소
         if (AI[src.ai]?.hunt && dst.hp / dst.mhp < LOW_HP) d *= 1.3; // 끝나 가는 냄새
       } else {
         if (dst.broken) d *= AI[dst.ai].breakTaken || BREAK_TAKEN;
@@ -233,6 +234,7 @@ export function runBattle(opt) {
       $('#allies', ov).innerHTML = A.map((a, i) => {
         const tags = [];
         if (a.tauntT) tags.push(chip(`도발 ${a.tauntT}`, 'good'));
+        if (a.origT) tags.push(chip(`진조 ${a.origT}`, 'good'));
         if (a.shield) tags.push(chip(`🛡 ${n0(a.shield)}`, 'good'));
         if (a.buf > 0 && a.bufT) tags.push(chip(`공격↑ ${a.bufT}`, 'good'));
         const inc = a.hp > 0 ? incoming(a) : 0;
@@ -264,6 +266,7 @@ export function runBattle(opt) {
       if (dst.shield && !pierce) { blocked = Math.min(dst.shield, left); dst.shield -= blocked; left -= blocked; }
       dst.hp = Math.max(0, dst.hp - left);
       if (dst.side === 'a') charge(dst, GAIN.hit);
+      if (src.origT && left > 0 && src.hp > 0) { const got = Math.min(src.mhp - src.hp, Math.round(left * (src.origDrain || 0))); if (got > 0) { src.hp += got; popup(allyEl(src), '+' + n0(got) + '<small>흡혈</small>', 'heal'); } }
       else if (dst.hp <= 0) charge(src, GAIN.kill);
       return { d, hp: left, blocked, em: elemMult(src.elem, dst.elem), crit, ko: dst.hp <= 0, brk: dst.broken };
     }
@@ -394,6 +397,11 @@ export function runBattle(opt) {
         for (const x of alive(A)) { if (x === a) continue; const got = Math.min(x.mhp - x.hp, h); x.hp += got; popup(allyEl(x), '+' + n0(got), 'heal'); }
         a.hp -= cost; drawAllies(); if (cost > 0) popup(allyEl(a), `-${n0(cost)}<small>반동</small>`, 'toa');
         log(`${nm(a)}의 「${esc(sk.name)}」 → 아군 전체 <span class="hl">체력 ${n0(h)} 회복</span> · 반동으로 자신 체력 ${n0(cost)} 소모`);
+      } else if (k === 'origin') {
+        // 진조의 피를 깨워요: 몇 턴 동안 받는 피해가 줄고, 입힌 피해만큼 흡혈하고, 적의 시선을 끌어요
+        a.origT = sk.turns || 3; a.origCut = sk.cut ?? 0.5; a.origDrain = sk.drain ?? 0.5; a.tauntT = Math.max(a.tauntT || 0, 2);
+        drawAllies(); popup(allyEl(a), `진조<small>피해 -${Math.round(a.origCut * 100)}% · 흡혈</small>`, 'heal');
+        log(`${nm(a)}의 「${esc(sk.name)}」 → 자신 <span class="hl">${a.origT}턴: 받는 피해 ${Math.round(a.origCut * 100)}% 감소 · 입힌 피해의 ${Math.round(a.origDrain * 100)}% 회복</span> · 2턴 도발`);
       } else if (k === 'shield') {
         const sh = Math.round(a.def * p * 1.6);
         for (const x of alive(A)) { x.shield = Math.max(x.shield, sh); x.shT = 2; }
@@ -531,6 +539,7 @@ export function runBattle(opt) {
       if (k === 'mend') return a.hp / a.mhp > 0.3 && alive(A).some(x => x !== a && x.hp / x.mhp < 0.6);
       if (k === 'shield' || k === 'scale') return alive(A).some(x => !x.shield && incoming(x) > x.hp * 0.2) || (k === 'scale' && !alive(A).some(x => x.bufT));
       if (k === 'buff') return !alive(A).some(x => x.bufT);
+      if (k === 'origin') return !a.origT;
       if (k === 'mark') return !alive(E).some(e => e.markT);
       return true;
     }
@@ -557,6 +566,7 @@ export function runBattle(opt) {
       if (u.shT) { u.shT--; if (!u.shT) u.shield = 0; }
       if (u.markT) { u.markT--; if (!u.markT) u.mark = 0; }
       if (u.tauntT) u.tauntT--;
+      if (u.origT) u.origT--;
     }
     function settled() {
       if (!alive(E).length) { end(true); return true; }
