@@ -220,7 +220,7 @@ const SCREENS = {
     const t = CHTAB[c.id] || tab;
     const body = {
       info: () => `<div class="card"><div class="stats"><div>HP<b>${fmt(st.hp)}</b></div><div>공격<b>${fmt(st.atk)}</b></div><div>방어<b>${fmt(st.def)}</b></div><div>속도<b>${fmt(st.spd)}</b></div><div>전투력<b>${fmt(power(c, o))}</b></div><div>소속<b style="color:var(--tx)">${esc(c.faction || '-')}</b></div></div></div>
-        <div class="card"><b>${esc(c.skill?.name || '')}</b> <span class="tag">재사용 ${c.skill?.cd ?? '-'}턴</span><p class="muted" style="margin:6px 0 0">${esc(c.skill?.desc || '')}</p></div>
+        <div class="card"><b>${esc(c.skill?.name || '')}</b> <span class="tag">${c.skill?.passive ? '상시 패시브' : `재사용 ${c.skill?.cd ?? '-'}턴`}</span><p class="muted" style="margin:6px 0 0">${esc(c.skill?.desc || '')}</p></div>
         <div class="card"><b>${esc(T('weapon'))} · ${esc(c.weapon?.name || '')}</b>${c.weapon && img(c.weapon.id) ? `<img src="${img(c.weapon.id)}" style="width:100%;border-radius:10px;margin-top:6px">` : ''}<p class="muted" style="margin:6px 0 0">${esc(c.weapon?.desc || '')}</p></div>
         <div class="card"><p style="margin:0;font-size:14px;line-height:1.7">${esc(c.profile || '')}</p></div>`,
       grow: () => {

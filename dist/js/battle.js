@@ -51,7 +51,9 @@ function makeAlly(c) {
   const s = stats(c);
   const ult = c.skill || { kind: 'dmg', power: 1.5, name: '필살기' };
   const rsk = ROLE_SK[c.role] || ROLE_SK.atk;
-  return { side: 'a', c, name: c.name, elem: c.elem, role: c.role, ...s, mhp: s.hp, ult, rsk, cost: rsk.cost, en: ULT_START, shield: 0, buf: 0, bufT: 0, shT: 0, tauntT: 0, av: 0 };
+  // 상시 패시브: 필살기 게이지 없이 전투 내내 효과가 켜져 있어요
+  const pas = ult.passive ? ult : null;
+  return { side: 'a', c, name: c.name, elem: c.elem, role: c.role, ...s, mhp: s.hp, ult, rsk, pas, cost: rsk.cost, en: pas ? 0 : ULT_START, shield: 0, buf: 0, bufT: 0, shT: 0, tauntT: 0, av: 0 };
 }
 // 데이터에 ai가 없어도 이야기 에너미는 제 패턴을 쓰게 해요
 const NAME_AI = { '청소부': 'swarm', '청소부 킹': 'king' };
@@ -160,6 +162,7 @@ export function runBattle(opt) {
       let d = src.atk * (1 + (src.buf || 0)) * mult * elemMult(src.elem, dst.elem) * (120 / (120 + dst.def));
       if (dst.side === 'a') {
         if (dst.role === 'def') d *= 0.85;
+        if (dst.pas?.cut) d *= 1 - dst.pas.cut; // 패시브: 받는 피해 감소
         if (AI[src.ai]?.hunt && dst.hp / dst.mhp < LOW_HP) d *= 1.3; // 끝나 가는 냄새
       } else {
         if (dst.broken) d *= AI[dst.ai].breakTaken || BREAK_TAKEN;
@@ -233,6 +236,7 @@ export function runBattle(opt) {
       $('#allies', ov).innerHTML = A.map((a, i) => {
         const tags = [];
         if (a.tauntT) tags.push(chip(`도발 ${a.tauntT}`, 'good'));
+        if (a.pas) tags.push(chip(esc(a.pas.tag || '패시브'), 'good'));
         if (a.shield) tags.push(chip(`🛡 ${n0(a.shield)}`, 'good'));
         if (a.buf > 0 && a.bufT) tags.push(chip(`공격↑ ${a.bufT}`, 'good'));
         const inc = a.hp > 0 ? incoming(a) : 0;
@@ -246,7 +250,7 @@ export function runBattle(opt) {
         <span class="an"><span class="el el-${esc(a.elem)}" title="${esc(a.elem)}">${esc(String(a.elem || '')[0] || '')}</span> ${esc(a.name)}</span><span class="sts">${tags.join('')}</span>
         <div class="hpw"><div class="hpn">${a.hp > 0 ? `${n0(a.hp)}<small> / ${n0(a.mhp)}</small>` : '전투 불능'}</div><div class="bar"><i style="width:${Math.max(0, a.hp / a.mhp * 100)}%"></i></div>
         ${a.shield ? `<div class="bar sh" style="margin-top:2px"><i style="width:${Math.min(100, a.shield / a.mhp * 100)}%"></i></div>` : ''}
-        <div class="bar en ${full ? 'full' : ''}"><i style="width:${Math.min(100, a.en / ULT_MAX * 100)}%"></i></div></div></button>`;
+        ${a.pas ? '' : `<div class="bar en ${full ? 'full' : ''}"><i style="width:${Math.min(100, a.en / ULT_MAX * 100)}%"></i></div>`}</div></button>`;
       }).join('');
     }
     const drawAll = () => { drawOrder(); drawFoes(); drawAllies(); drawSp(); };
@@ -254,7 +258,7 @@ export function runBattle(opt) {
     const foeEl = e => $(`[data-f="${E.indexOf(e)}"]`, ov), allyEl = a => $(`[data-a="${A.indexOf(a)}"]`, ov);
     const unitEl = u => u.side === 'e' ? foeEl(u) : allyEl(u);
     const flash = (el, cls) => { if (!el || fast()) return; el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); };
-    const charge = (a, n) => { if (a.hp > 0) a.en = Math.min(ULT_MAX, a.en + n); };
+    const charge = (a, n) => { if (a.hp > 0 && !a.pas) a.en = Math.min(ULT_MAX, a.en + n); };
 
     function dealDmg(src, dst, mult, pierce) {
       const crit = Math.random() < 0.1;
@@ -264,6 +268,7 @@ export function runBattle(opt) {
       if (dst.shield && !pierce) { blocked = Math.min(dst.shield, left); dst.shield -= blocked; left -= blocked; }
       dst.hp = Math.max(0, dst.hp - left);
       if (dst.side === 'a') charge(dst, GAIN.hit);
+      if (src.pas?.drain && left > 0 && src.hp > 0) { const got = Math.min(src.mhp - src.hp, Math.round(left * src.pas.drain)); if (got > 0) { src.hp += got; popup(allyEl(src), '+' + n0(got) + '<small>흡혈</small>', 'heal'); } }
       else if (dst.hp <= 0) charge(src, GAIN.kill);
       return { d, hp: left, blocked, em: elemMult(src.elem, dst.elem), crit, ko: dst.hp <= 0, brk: dst.broken };
     }
