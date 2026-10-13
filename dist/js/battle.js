@@ -379,6 +379,8 @@ export function runBattle(opt) {
       }
       // 보통 배속: 화면 가운데를 가로지르는 눈 띠 하나와 기술 이름
       const el = $('#cutin', ov);
+      const cutInId = (el.cutInId || 0) + 1;
+      el.cutInId = cutInId;
       el.className = `cutin c-${a.elem || ''}`;
       el.innerHTML = `<div class="ci-dim"></div>
         <div class="ci-eye"><div class="ci-eyein">${pic(380, 600, 62)}</div></div>
@@ -387,7 +389,7 @@ export function runBattle(opt) {
       const ms = speed === 2 ? 700 : 950;
       return new Promise(res => {
         let done = false;
-        const fin = () => { if (done) return; done = true; el.onclick = null; el.classList.add('off'); setTimeout(() => { el.className = 'cutin'; el.innerHTML = ''; }, 180); res(); };
+        const fin = () => { if (done) return; done = true; el.onclick = null; el.classList.add('off'); setTimeout(() => { if (el.cutInId === cutInId) { el.className = 'cutin'; el.innerHTML = ''; } }, 180); res(); };
         el.onclick = fin; // 눌러서 넘기기
         setTimeout(fin, ms);
       });
