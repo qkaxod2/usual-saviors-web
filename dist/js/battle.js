@@ -61,7 +61,14 @@ function makeFoe(e, scale) {
   const tough = e.tough || AI[ai].tough;
   return { side: 'e', src: e, name: e.name, elem: e.elem, boss: !!e.boss, ai, hp: Math.round(e.hp * k), mhp: Math.round(e.hp * k), atk: Math.round(e.atk * Math.sqrt(k)), def: Math.round(e.def * Math.sqrt(k)), spd: e.spd || 100, turn: 0, buf: 0, bufT: 0, mark: 0, markT: 0, shield: 0, tough, mtough: tough, broken: false, intent: null, av: 0 };
 }
-const cutArt = c => img(c.pose?.id) || upper(c) || standing(c);
+// 컷인용 상반신과 얼굴 위치: cut.x·y = 두 눈 사이(이미지 비율), cut.w = 얼굴 폭, cut.ar = 가로/세로
+const CUT0 = { x: .5, y: .28, w: .3, ar: .684 };
+const cutArt = c => upper(c) || standing(c);
+// 얼굴 폭을 fw px로 맞추고 눈 사이를 (cx, cy)에 오도록 그림을 놓아요
+const cutPos = (cut, fw, cx, cy) => {
+  const w = fw / cut.w, h = w / cut.ar;
+  return `width:${w.toFixed(1)}px;height:${h.toFixed(1)}px;left:${(cx - cut.x * w).toFixed(1)}px;top:${(cy - cut.y * h).toFixed(1)}px`;
+};
 
 // opt: {title, bg, enemies, squad(chars), scale, music, limit(제한 차례 수, 넘기면 패배)}
 export function runBattle(opt) {
@@ -348,11 +355,15 @@ export function runBattle(opt) {
 
     // ---- 필살기: 컷인과 함께 언제든 끼어들어요 ----
     function cutIn(a, chain) {
-      const el = $('#cutin', ov), art = cutArt(a.c);
+      const el = $('#cutin', ov), art = cutArt(a.c), cut = { ...CUT0, ...(a.c.cut || {}) };
       el.className = `cutin c-${a.elem || ''}`;
-      el.innerHTML = `<div class="ci-dim"></div><div class="ci-band"></div><div class="ci-lines"></div>
-        ${art ? `<img class="ci-art" src="${art}" alt="">` : ''}
-        <div class="ci-txt">${chain ? '<span class="ci-chain">연계!</span>' : ''}<span class="ci-who"><span class="el el-${esc(a.elem)}">${esc(String(a.elem || '')[0] || '')}</span> ${esc(a.name)}</span><b>${esc(a.ult.name)}</b><small>${esc(SK_KIND[a.ult.kind] || '필살기')}</small></div>`;
+      const pic = (fw, cx, cy) => art ? `<img src="${art}" alt="" style="${cutPos(cut, fw, cx, cy)}">` : '';
+      // 눈 띠(1100×150)는 눈을 꽉 채우고, 오른쪽 패널(440×360)은 얼굴과 어깨까지 보여줘요
+      el.innerHTML = `<div class="ci-bg"></div><div class="ci-dots"></div><div class="ci-rays"></div>
+        <div class="ci-eye"><div class="ci-eyein">${pic(430, 610, 75)}</div></div>
+        <div class="ci-bust"><div class="ci-bustin">${pic(220, 265, 115)}</div></div>
+        <div class="ci-txt">${chain ? '<span class="ci-chain">연계!</span>' : ''}<span class="ci-who"><span class="el el-${esc(a.elem)}">${esc(String(a.elem || '')[0] || '')}</span>${esc(a.name)}</span><b class="${a.ult.name.length > 11 ? 'long' : ''}">${esc(a.ult.name)}</b><small>${esc(SK_KIND[a.ult.kind] || '필살기')}</small></div>
+        <div class="ci-flash"></div>`;
       void el.offsetWidth; el.classList.add('on');
       sfx('flash'); setTimeout(() => sfx('skill'), 120);
       const ms = fast() ? 650 : speed === 2 ? 1050 : 1400;
