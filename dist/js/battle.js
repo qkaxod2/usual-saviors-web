@@ -266,10 +266,11 @@ export function runBattle(opt) {
       d = Math.max(1, Math.round(d));
       let left = d, blocked = 0;
       if (dst.shield && !pierce) { blocked = Math.min(dst.shield, left); dst.shield -= blocked; left -= blocked; }
+      const hpLost = Math.min(dst.hp, left);
       dst.hp = Math.max(0, dst.hp - left);
       if (dst.side === 'a') charge(dst, GAIN.hit);
-      if (src.pas?.drain && left > 0 && src.hp > 0) { const got = Math.min(src.mhp - src.hp, Math.round(left * src.pas.drain)); if (got > 0) { src.hp += got; popup(allyEl(src), '+' + n0(got) + '<small>흡혈</small>', 'heal'); } }
       else if (dst.hp <= 0) charge(src, GAIN.kill);
+      if (src.pas?.drain && hpLost > 0 && src.hp > 0) { const got = Math.min(src.mhp - src.hp, Math.round(hpLost * src.pas.drain)); if (got > 0) { src.hp += got; popup(allyEl(src), '+' + n0(got) + '<small>흡혈</small>', 'heal'); } }
       return { d, hp: left, blocked, em: elemMult(src.elem, dst.elem), crit, ko: dst.hp <= 0, brk: dst.broken };
     }
     // 흐트러짐 게이지 깎기. 다 깎이면 타임라인에서 밀리고, 모으던 힘도 흩어져요
