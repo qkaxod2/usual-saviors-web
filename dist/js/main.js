@@ -2,6 +2,7 @@ import { $, esc, toast, setMuted, audio } from './util.js';
 import { loadGame, G } from './data.js';
 import { load, S, save, sync, setOnSync, claim, checkOwner, setOnKicked } from './state.js';
 import { go, redraw } from './screens.js';
+import { migrate } from './move.js';
 
 // 가로 16:9 화면(960×540)을 창 크기에 맞춰 늘리고 줄여요
 function fitStage() {
@@ -16,6 +17,7 @@ async function boot() {
   if (G.meta.accent) document.documentElement.style.setProperty('--ac', G.meta.accent);
   load();
   claim(); setOnKicked(showKicked);
+  if (await migrate()) return;
   audio.vol.bgm = S.settings.bgm ?? .5; audio.vol.sfx = S.settings.sfx ?? .6; setMuted(!!S.settings.muted);
   go('title');
   setOnSync(redraw);

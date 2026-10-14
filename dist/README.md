@@ -27,7 +27,9 @@
 
 - 로컬 확인: 이 폴더에서 `python3 -m http.server 8000` → http://localhost:8000
   (파일을 더블클릭해서 `file://`로 열면 모듈이 막혀서 안 돌아가요)
-- GitHub Pages / Netlify / Cloudflare Pages / Vercel: 폴더째 올리면 끝이에요. 하위 경로에서도 돌아가요.
+- GitHub Pages: main에 머지되면 `.github/workflows/pages.yml`이 자동으로 배포해요 (https://qkaxod2.github.io/usual-saviors-web/).
+  배포할 때 `scripts/build_pages.py`가 PNG를 전부 webp로 바꿔서 올리고, 원본 PNG는 레포에만 남아요.
+- 예전 주소(GPT Sites)로 들어오면 새 주소로 옮기라는 안내가 뜨고, 진행 상황도 같이 넘어가요 (`js/move.js`).
 - 한 번 접속하면 서비스 워커가 파일을 저장해 둬서, 다음부터는 인터넷 없이도 열려요. 폰에서 "홈 화면에 추가"하면 앱처럼 써요.
 - 나중에 APK로 만들고 싶으면 이 폴더를 Capacitor(`npx cap init` → `www`에 복사 → `npx cap add android`)로 감싸면 돼요.
 
