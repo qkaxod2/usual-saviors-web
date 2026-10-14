@@ -63,7 +63,7 @@ img{user-select:none;-webkit-user-drag:none}
 .title .tchar{position:absolute;inset:0 0 80px;display:flex;justify-content:center;align-items:flex-end;pointer-events:none}
 .title .tchar img{height:85%;object-fit:contain;filter:drop-shadow(0 10px 30px rgba(0,0,0,.6))}
 @keyframes blink{50%{opacity:.35}}
-.opening{position:absolute;inset:0;background:#000;display:flex;align-items:center;justify-content:center;padding:30px;text-align:center;font-size:17px;line-height:1.8}
+.opening{position:absolute;inset:0;background:#000;color:#f3eee4;display:flex;align-items:center;justify-content:center;padding:30px;text-align:center;font-size:17px;line-height:1.8}
 .opening p{opacity:0;transition:opacity 1.2s;margin:0}
 .opening p.on{opacity:1}
 
