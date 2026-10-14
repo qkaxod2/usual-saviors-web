@@ -60,7 +60,7 @@ function makeFoe(e, scale) {
   const k = scale || 1;
   const ai = AI[e.ai] ? e.ai : NAME_AI[e.name] || (e.boss ? 'boss' : 'basic');
   const tough = e.tough || AI[ai].tough;
-  return { side: 'e', src: e, name: e.name, elem: e.elem, boss: !!e.boss, ai, hp: Math.round(e.hp * k), mhp: Math.round(e.hp * k), atk: Math.round(e.atk * Math.sqrt(k)), def: Math.round(e.def * Math.sqrt(k)), spd: e.spd || 100, turn: 0, buf: 0, bufT: 0, mark: 0, markT: 0, shield: 0, tough, mtough: tough, broken: false, intent: null, av: 0 };
+  return { side: 'e', src: e, name: e.name, elem: e.elem, boss: !!e.boss, ai, hp: Math.round(e.hp * k), mhp: Math.round(e.hp * k), atk: Math.round(e.atk * Math.sqrt(k)), def: Math.round(e.def * Math.sqrt(k)), spd: e.spd || 100, turn: 0, buf: 0, bufT: 0, mark: 0, markT: 0, bleed: 0, bleedT: 0, bleedSrc: null, shield: 0, tough, mtough: tough, broken: false, intent: null, av: 0 };
 }
 // 컷인용 상반신과 얼굴 위치: cut.x·y = 두 눈 사이(이미지 비율), cut.w = 얼굴 폭, cut.ar = 가로/세로
 const CUT0 = { x: .5, y: .28, w: .3, ar: .684 };
@@ -216,6 +216,7 @@ export function runBattle(opt) {
         if (e.hp > 0 && me && adv(me, e)) tags.push(chip('상성 우위', 'good'));
         if (e.buf < 0 && e.bufT) tags.push(chip(`매료 ${e.bufT}`, 'good'));
         if (e.hp > 0 && e.markT) tags.push(chip(`◎ 조준 ${e.markT} · 받는 피해 +${Math.round(e.mark * 100)}%`, 'good'));
+        if (e.hp > 0 && e.bleedT) tags.push(chip(`출혈 ${e.bleedT} · 차례마다 -${n0(e.bleed)}`, 'good'));
         const ai = AI[e.ai];
         if (e.hp > 0 && e.broken) tags.push(chip(ai.breakTaken ? `빈자리 노출 · 받는 피해 ×${ai.breakTaken}` : `받는 피해 ×${BREAK_TAKEN}`, 'good'));
         else if (e.hp > 0 && ai.regen) tags.push(chip(`재생 · 차례마다 ${Math.round(ai.regen * 100)}%`, 'bad'));
@@ -404,6 +405,15 @@ export function runBattle(opt) {
         for (const e of alive(E)) { const r = dealDmg(a, e, p * 1.15); parts.push(`${esc(e.label)} ${showHit(e, r)}`); wear(e, breakAmt(a, e, 2), true); }
         drawFoes();
         log(`${nm(a)}의 「${esc(sk.name)}」 → 적 전체<br>${parts.join(' · ')}`);
+      } else if (k === 'rend') {
+        // 적 전체를 물어뜯고 출혈을 남겨요. 출혈은 적 차례가 올 때마다 방어·보호막을 무시하고 체력을 깎아요
+        const parts = [], bl = Math.round(a.atk * (sk.bleed || 0.5)), bt = sk.bleedT || 3;
+        for (const e of alive(E)) {
+          const r = dealDmg(a, e, p * 1.15); parts.push(`${esc(e.label)} ${showHit(e, r)}`); wear(e, breakAmt(a, e, 2), true);
+          if (e.hp > 0) { e.bleed = Math.max(e.bleed, bl); e.bleedT = Math.max(e.bleedT, bt); e.bleedSrc = a; }
+        }
+        drawFoes();
+        log(`${nm(a)}의 「${esc(sk.name)}」 → 적 전체<br>${parts.join(' · ')}<br><span class="hl">출혈</span> (${bt}턴: 차례마다 ${n0(bl)} 피해)`);
       } else if (k === 'heal') {
         const h = Math.round(a.atk * p * 1.1);
         for (const x of alive(A)) { const got = Math.min(x.mhp - x.hp, h); x.hp += got; drawAllies(); popup(allyEl(x), '+' + n0(got), 'heal'); }
@@ -481,6 +491,13 @@ export function runBattle(opt) {
       if (!alive(A).length) return;
       await startAct(e);
       const ai = AI[e.ai];
+      if (e.bleedT) {
+        const d = Math.min(e.hp, e.bleed); e.hp -= d; e.bleedT--;
+        if (!e.bleedT) e.bleed = 0;
+        drawFoes(); popup(foeEl(e), `-${n0(d)}<small>출혈</small>`, 'adv');
+        log(`${nm(e)}의 상처에서 피가 흘러요 <span class="dn">${n0(d)} 피해</span>${e.hp <= 0 ? ` <span class="ko">${esc(e.label)} 쓰러짐</span>` : ''}`);
+        if (e.hp <= 0) { if (e.bleedSrc) charge(e.bleedSrc, GAIN.kill); await W(400); return; }
+      }
       if (e.broken) {
         e.broken = false; e.tough = e.mtough; drawFoes();
         log(`${nm(e)}이(가) 정신을 차렸어요. 흐트러짐 게이지가 다시 차올라요`);
