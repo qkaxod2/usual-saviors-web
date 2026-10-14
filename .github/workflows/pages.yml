@@ -29,6 +29,8 @@ jobs:
       - run: pip install pillow
       - run: python3 scripts/build_pages.py dist _site
       - uses: actions/configure-pages@v5
+        with:
+          enablement: true
       - uses: actions/upload-pages-artifact@v3
         with:
           path: _site
