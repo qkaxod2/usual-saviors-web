@@ -49,7 +49,12 @@ export async function migrate() {
     <p class="muted">새 주소에서 계속 플레이해 주세요. 지금까지의 진행 상황도 함께 옮겨 드려요.</p>`,
     [{ label: '여기서 계속', cls: 'sub', value: false }, { label: '새 주소로 옮기기', value: true }]);
   if (!go) return false;
-  location.href = HOME + ((S.rev || 0) > 0 ? TAG + await pack(exportSave()) : '');
+  // 예전 버전 세이브에는 저장 번호(rev)가 없어서, 진행한 흔적으로 세이브가 있는지 봐요
+  const played = (S.rev || 0) > 0 || S.seenOpening || S.name || Object.keys(S.owned || {}).length;
+  const url = HOME + (played ? TAG + await pack(exportSave()) : '');
+  // 사이트가 다른 페이지 안(iframe)에 떠 있어도 창 전체가 새 주소로 넘어가게 해요
+  try { if (window.top !== window) { window.top.location.href = url; return true; } } catch (e) { }
+  location.href = url;
   $('#screen').innerHTML = '<div class="boot"><p class="muted">새 주소로 옮기는 중이에요…</p></div>';
   return true;
 }
