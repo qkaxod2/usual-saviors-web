@@ -27,15 +27,19 @@ function lobbyHits(c) {
     return `<div class="hit ${part}" data-act="touch" data-v="${part}" style="left:${x}%;top:${y}%;width:${w}%;height:${h}%"></div>`;
   }).join('');
 }
-export function go(name, arg) {
+// keep: 같은 화면을 다시 그릴 때(refresh) 스크롤 위치를 그대로 둬요
+export function go(name, arg, keep) {
   lobbyCleanup(); lobbyCleanup = () => {};
+  const same = keep && name === current;
+  const pos = same ? [...scr().querySelectorAll('.body, .grid, .chat')].map(el => el.scrollTop) : null;
   current = name; currentArg = arg;
   const f = SCREENS[name]; if (!f) return;
   scr().onclick = null; scr().innerHTML = ''; scr().dataset.s = name;
   f(arg);
   scr().scrollTop = 0;
+  if (pos) scr().querySelectorAll('.body, .grid, .chat').forEach((el, i) => { if (pos[i]) el.scrollTop = pos[i]; });
 }
-const refresh = () => go(current, currentArg);
+const refresh = () => go(current, currentArg, true);
 // 다른 창에서 저장한 진행 상황을 불러왔을 때 지금 화면을 다시 그려요
 export function redraw() { if (current !== 'title') refresh(); }
 
@@ -387,7 +391,7 @@ const SCREENS = {
       const left = run ? run.end - Date.now() : 0;
       return `<div class="li" style="flex-direction:column;align-items:stretch"><div class="row"><div class="grow"><div class="t">${esc(d.name)}</div><div class="d">${esc(d.desc || '')}</div></div></div>
         <div class="row" style="margin-top:6px"><span class="muted grow">⏱ ${d.hours}${fast ? '분' : '시간'} · ${d.need}명 · <span class="rw">${esc(rewardText(d.reward || {}))}</span></span>
-        ${run ? (left <= 0 ? `<button class="btn sm" data-act="claim" data-v="${d.id}">보상 받기</button>` : `<span class="tag">${esc(dur(left))}</span>`) : `<button class="btn sub sm" data-act="send" data-v="${d.id}">보내기</button>`}</div>
+        ${run ? (left <= 0 ? `<button class="btn sm" data-act="claim" data-v="${d.id}">보상 받기</button>` : `<span class="tag" data-end="${run.end}">${esc(dur(left))}</span>`) : `<button class="btn sub sm" data-act="send" data-v="${d.id}">보내기</button>`}</div>
         ${run ? `<div class="row" style="margin-top:6px;gap:4px">${run.chars.map(id => { const c = charById(id); return c ? `<div class="av" style="width:30px;height:30px;flex-basis:30px">${upper(c) ? `<img src="${upper(c)}">` : ''}</div>` : ''; }).join('')}</div>` : ''}</div>`;
     }).join('')}</div>`;
     bind({
@@ -406,7 +410,13 @@ const SCREENS = {
         give(d.reward || {}); refresh();
       },
     });
-    clearInterval(TICK); TICK = setInterval(() => { if (current !== 'dispatch') clearInterval(TICK); else if (Object.values(S.disp).length) refresh(); }, 1000);
+    // 남은 시간 글자만 바꾸고, 다 끝난 파견이 생길 때만 화면을 다시 그려요 (매초 다시 그리면 스크롤이 튀어요)
+    clearInterval(TICK); TICK = setInterval(() => {
+      if (current !== 'dispatch') { clearInterval(TICK); return; }
+      let done = false;
+      scr().querySelectorAll('[data-end]').forEach(el => { const left = +el.dataset.end - Date.now(); if (left <= 0) done = true; else el.textContent = dur(left); });
+      if (done) refresh();
+    }, 1000);
   },
 
   // ============ 우편 ============
