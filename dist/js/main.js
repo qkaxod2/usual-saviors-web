@@ -1,4 +1,4 @@
-import { $, esc, toast, setMuted, audio } from './util.js';
+import { $, esc, toast, setMuted, setVolume } from './util.js';
 import { loadGame, G } from './data.js';
 import { load, S, save, sync, setOnSync, claim, checkOwner, setOnKicked } from './state.js';
 import { go, redraw } from './screens.js';
@@ -18,7 +18,7 @@ async function boot() {
   load();
   claim(); setOnKicked(showKicked);
   if (await migrate()) return;
-  audio.vol.bgm = S.settings.bgm ?? .5; audio.vol.sfx = S.settings.sfx ?? .6; setMuted(!!S.settings.muted);
+  setVolume('bgm', S.settings.bgm ?? .5); setVolume('sfx', S.settings.sfx ?? .6); setMuted(!!S.settings.muted);
   go('title');
   setOnSync(redraw);
   setInterval(() => save(), 30000);

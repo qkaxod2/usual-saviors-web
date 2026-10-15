@@ -276,3 +276,7 @@ input[type=text]{background:rgba(255,255,255,.06);border:1px solid var(--line);b
 .lobby .lfigure.flinch{animation:flinch .45s ease-out,breath 5s ease-in-out .45s infinite}
 @media(prefers-reduced-motion:reduce){.lobby .lfigure,.lobby .lfigure.flinch{animation:none}}
 
+/* 설정: 배경음·효과음 볼륨 */
+.sw .vol{display:flex;align-items:center;gap:8px}
+.sw .vol input[type=range]{width:140px;accent-color:var(--stamp,var(--ac))}
+.sw .vol b{min-width:26px;text-align:right;font-size:13px}
