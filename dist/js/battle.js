@@ -215,7 +215,7 @@ export function runBattle(opt) {
         const tags = [];
         if (e.hp > 0 && me && adv(me, e)) tags.push(chip('상성 우위', 'good'));
         if (e.buf < 0 && e.bufT) tags.push(chip(`매료 ${e.bufT}`, 'good'));
-        if (e.hp > 0 && e.markT) tags.push(chip(`◎ 조준 ${e.markT} · 받는 피해 +${Math.round(e.mark * 100)}%`, 'good'));
+        if (e.hp > 0 && e.markT) tags.push(chip(`◎ ${e.markName || '조준'} ${e.markT} · 받는 피해 +${Math.round(e.mark * 100)}%`, 'good'));
         if (e.hp > 0 && e.bleedT) tags.push(chip(`출혈 ${e.bleedT} · 차례마다 -${n0(e.bleed)}`, 'good'));
         const ai = AI[e.ai];
         if (e.hp > 0 && e.broken) tags.push(chip(ai.breakTaken ? `빈자리 노출 · 받는 피해 ×${ai.breakTaken}` : `받는 피해 ×${BREAK_TAKEN}`, 'good'));
@@ -438,11 +438,12 @@ export function runBattle(opt) {
       } else if (k === 'mark') {
         // 대상 하나에 조준 표시: 받는 피해가 늘고, 아군 공격이 흐트러짐 게이지를 1 더 깎고, 타임라인에서 밀려나요
         const e = target && target.hp > 0 ? target : alive(E).sort((x, y) => (y.boss - x.boss) || (x.broken - y.broken) || (y.hp - x.hp))[0];
-        e.mark = 0.2 * p; e.markT = 2; push(e, 0.25);
-        popup(foeEl(e), '◎ 조준', 'adv'); sfx('seal');
+        const ml = sk.markLabel || '조준';
+        e.mark = 0.2 * p; e.markT = 2; e.markName = ml; push(e, 0.25);
+        popup(foeEl(e), '◎ ' + ml, 'adv'); sfx('seal');
         const b = breakAmt(a, e, 1);
         wear(e, b, true); drawAll();
-        log(`${nm(a)}의 「${esc(sk.name)}」 → ${nm(e)} <span class="hl">조준</span> (2턴: 받는 피해 +${Math.round(e.mark * 100)}%, 아군 공격마다 흐트러짐 게이지 -1 추가, 행동 밀림)${e.broken ? ' <span class="hl">흐트러짐!</span>' : ''}`);
+        log(`${nm(a)}의 「${esc(sk.name)}」 → ${nm(e)} <span class="hl">${ml}</span> (2턴: 받는 피해 +${Math.round(e.mark * 100)}%, 아군 공격마다 흐트러짐 게이지 -1 추가, 행동 밀림)${e.broken ? ' <span class="hl">흐트러짐!</span>' : ''}`);
       } else if (k === 'buff') {
         for (const x of alive(A)) { x.buf = Math.max(x.buf || 0, 0.17 * p); x.bufT = 2; if (x !== cur) push(x, -0.2); }
         drawAll(); for (const x of alive(A)) popup(allyEl(x), '공격↑', 'heal');
