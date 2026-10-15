@@ -44,30 +44,27 @@
 .lobby .lfigure img{filter:drop-shadow(0 18px 28px rgba(20,16,12,.45))}
 
 /* ---------- 위쪽: 사원증, 시계, 재화 ---------- */
-.ltop{position:absolute;left:auto;right:20px;top:0;width:300px;z-index:3;display:flex;flex-wrap:wrap;align-items:stretch;justify-content:space-between;gap:6px;padding:14px 0 0}
-.lid{display:flex;align-items:center;gap:10px;padding:7px 14px 7px 8px;border-radius:999px;
-  background:rgba(255,253,248,.88);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
-  box-shadow:0 1px 0 rgba(255,255,255,.6) inset,0 6px 18px -8px rgba(20,16,12,.45)}
-.lseal{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:var(--stamp);color:#fff;
-  font:900 14px var(--serif);box-shadow:0 0 0 2px rgba(200,64,47,.25)}
-.lid small{display:block;font-size:9.5px;letter-spacing:.06em;color:var(--tx2);line-height:1.3}
-.lid b{font:900 15px var(--serif);color:var(--ink);letter-spacing:.02em}
+.ltop{position:absolute;left:auto;right:20px;top:0;width:300px;z-index:3;padding:18px 0 0;
+  display:grid;grid-template-columns:1fr auto;grid-template-areas:"clock res" "id id";align-items:end;column-gap:12px}
+/* 메뉴처럼 박스 없이 글자와 얇은 선으로만 */
+.lclock{grid-area:clock;color:var(--ink);line-height:1}
+.lclock b{display:block;font:700 32px var(--serif);letter-spacing:.03em}
+.lclock b i{font-style:normal;color:var(--stamp);animation:blink 2s steps(1) infinite}
+.lclock span{display:block;margin-top:6px;font-size:10px;letter-spacing:.14em;color:var(--tx2);white-space:nowrap}
+.ltop .res{grid-area:res;display:flex;flex-direction:column;align-items:flex-end;gap:4px;margin:0 0 1px}
+.ltop .res span{display:flex;align-items:center;gap:6px;padding:0;border:0;border-radius:0;background:none;box-shadow:none;
+  font-size:13px;color:var(--ink)}
+.ltop .res span b{font:700 14px var(--serif);letter-spacing:.02em}
+.lid{grid-area:id;display:flex;align-items:center;gap:10px;margin-top:10px;padding-top:9px;border-top:1px solid rgba(43,38,32,.22)}
+.lseal{width:28px;height:28px;border-radius:4px;display:grid;place-items:center;flex:none;background:none;color:var(--stamp);
+  font:900 13px var(--serif);border:1.5px solid var(--stamp);transform:rotate(-6deg)}
+.lid small{display:block;font-size:9px;letter-spacing:.08em;color:var(--tx2);line-height:1.3}
+.lid b{font:900 16px var(--serif);color:var(--ink);letter-spacing:.04em}
 .lid b em{font:500 11px "Noto Sans KR",sans-serif;font-style:normal;color:var(--stamp);margin-left:2px}
-.lclock{color:#fff;text-shadow:0 1px 8px rgba(0,0,0,.5);line-height:1.15;padding-top:2px}
-.lclock b{display:block;font:700 26px var(--serif);letter-spacing:.04em}
-.lclock b i{font-style:normal;animation:blink 2s steps(1) infinite}
-.lclock span{font-size:10.5px;letter-spacing:.08em;opacity:.9}
-.ltop .res{margin-left:auto;display:flex;gap:6px}
-.ltop .res span{display:flex;align-items:center;border-radius:12px}
-/* 사원증은 오른쪽 기둥 둘째 줄에 꽉 차게: 캐릭터 머리 위엔 아무것도 두지 않는다 */
-.ltop .lid{order:-1;flex:1 1 100%;border-radius:12px}
-.ltop .lclock{flex:1;min-width:0}
-.ltop .res span{background:rgba(255,253,248,.88);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:0;
-  padding:5px 12px;box-shadow:0 6px 18px -8px rgba(20,16,12,.45)}
 
 /* ---------- 오른쪽 위: 작은 아이콘 줄 ---------- */
-.lside{position:absolute;right:20px;top:114px;width:300px;z-index:3;display:flex;flex-direction:row;justify-content:space-between;gap:0}
-.lside button{position:relative;width:48px;height:52px;border:0;background:none;color:var(--ink);border-radius:10px;
+.lside{position:absolute;right:20px;top:146px;width:300px;z-index:3;display:flex;flex-direction:row;justify-content:space-between;gap:0}
+.lside button{position:relative;width:48px;height:46px;border:0;background:none;color:var(--ink);border-radius:10px;
   display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:10.5px;font-weight:500;
   transition:background .25s var(--ease),transform .25s var(--ease)}
 .lside button svg{width:22px;height:22px;transition:transform .35s var(--ease)}
@@ -77,7 +74,7 @@
 .lside .dot{top:6px;right:12px;width:7px;height:7px;box-shadow:0 0 0 2px var(--bg)}
 
 /* ---------- 오른쪽: 메뉴 ---------- */
-.lmenu{position:absolute;left:auto;right:20px;padding:0;background:none;top:174px;bottom:22px;width:300px;z-index:3;display:flex;flex-direction:column;gap:0}
+.lmenu{position:absolute;left:auto;right:20px;padding:0;background:none;top:198px;bottom:22px;width:300px;z-index:3;display:flex;flex-direction:column;gap:0}
 
 /* 출격: 남색 결재 카드 */
 .lmenu .lm-main{display:block;font-size:inherit;position:relative;overflow:hidden;text-align:left;border:0;border-radius:4px;padding:16px 20px 15px;margin-bottom:10px;color:#fff;
@@ -135,11 +132,3 @@
   .lsweep,.ldust,.lm-main::after{display:none}
   .lobby .lch,.ltop,.lside,.lmenu>*,.bubble{animation:none}
 }
-
-/* 시계는 배경 밝기와 상관없이 읽히도록 종이 위에 */
-.lclock{color:var(--ink);text-shadow:none;padding:5px 14px 6px;border-radius:12px;background:rgba(255,253,248,.88);
-  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);box-shadow:0 6px 18px -8px rgba(20,16,12,.45)}
-.lclock{padding:4px 12px 5px}
-.lclock b{font-size:19px;line-height:1.1}
-.lclock span{display:block;font-size:9.5px;letter-spacing:.04em;white-space:nowrap}
-.lclock span{color:var(--tx2)}
