@@ -44,7 +44,7 @@
 .lobby .lfigure img{filter:drop-shadow(0 18px 28px rgba(20,16,12,.45))}
 
 /* ---------- 위쪽: 사원증, 시계, 재화 ---------- */
-.ltop{position:absolute;left:0;right:0;top:0;z-index:3;display:flex;align-items:flex-start;gap:14px;padding:16px 20px 0}
+.ltop{position:absolute;left:auto;right:20px;top:0;width:400px;z-index:3;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;padding:14px 0 0}
 .lid{display:flex;align-items:center;gap:10px;padding:7px 14px 7px 8px;border-radius:999px;
   background:rgba(255,253,248,.88);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
   box-shadow:0 1px 0 rgba(255,255,255,.6) inset,0 6px 18px -8px rgba(20,16,12,.45)}
@@ -58,11 +58,13 @@
 .lclock b i{font-style:normal;animation:blink 2s steps(1) infinite}
 .lclock span{font-size:10.5px;letter-spacing:.08em;opacity:.9}
 .ltop .res{margin-left:auto}
+/* 사원증은 오른쪽 기둥 둘째 줄에 꽉 차게: 캐릭터 머리 위엔 아무것도 두지 않는다 */
+.ltop .lid{order:2;flex:1 1 100%;border-radius:12px}
 .ltop .res span{background:rgba(255,253,248,.88);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:0;
   padding:5px 12px;box-shadow:0 6px 18px -8px rgba(20,16,12,.45)}
 
 /* ---------- 오른쪽 위: 작은 아이콘 줄 ---------- */
-.lside{position:absolute;right:20px;top:62px;z-index:3;display:flex;flex-direction:row;gap:4px}
+.lside{position:absolute;right:20px;top:108px;z-index:3;display:flex;flex-direction:row;gap:4px}
 .lside button{position:relative;width:56px;height:52px;border:0;background:none;color:var(--ink);border-radius:10px;
   display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:10.5px;font-weight:500;
   transition:background .25s var(--ease),transform .25s var(--ease)}
@@ -73,7 +75,7 @@
 .lside .dot{top:6px;right:12px;width:7px;height:7px;box-shadow:0 0 0 2px var(--bg)}
 
 /* ---------- 오른쪽: 메뉴 ---------- */
-.lmenu{position:absolute;left:auto;right:20px;padding:0;background:none;top:128px;bottom:22px;width:300px;z-index:3;display:flex;flex-direction:column;gap:0}
+.lmenu{position:absolute;left:auto;right:20px;padding:0;background:none;top:168px;bottom:22px;width:300px;z-index:3;display:flex;flex-direction:column;gap:0}
 
 /* 출격: 남색 결재 카드 */
 .lmenu .lm-main{display:block;font-size:inherit;position:relative;overflow:hidden;text-align:left;border:0;border-radius:4px;padding:16px 20px 15px;margin-bottom:10px;color:#fff;
@@ -135,5 +137,6 @@
 /* 시계는 배경 밝기와 상관없이 읽히도록 종이 위에 */
 .lclock{color:var(--ink);text-shadow:none;padding:5px 14px 6px;border-radius:12px;background:rgba(255,253,248,.88);
   backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);box-shadow:0 6px 18px -8px rgba(20,16,12,.45)}
-.lclock b{font-size:22px}
+.lclock{display:flex;align-items:baseline;gap:8px;padding:4px 12px 5px}
+.lclock b{font-size:20px}
 .lclock span{color:var(--tx2)}
