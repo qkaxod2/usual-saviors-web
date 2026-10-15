@@ -5,7 +5,7 @@ import {
   S, save, give, rewardText, count, stats, power, capLv, lvCost, limitCost, wCost, canPay, pay, addAff, filesOpen,
   owned, squadChars, teamPower, allStages, stageOpen, threadOpen, badges, MISSIONS, PASS, PASS_STEP,
   factions, factionMembers, factionOwned, codexSteps, codexClaimable,
-  MAX_LIMIT, MAX_WLV, MAX_AFF, MAX_DUP, resetSave, exportSave, importSave, addChar,
+  MAX_LIMIT, MAX_WLV, MAX_AFF, MAX_DUP, resetSave, exportSave, importSave, backups, restoreBackup, addChar,
 } from './state.js';
 import { playStory, playLines, parseScript } from './story.js';
 import { runBattle } from './battle.js';
@@ -511,8 +511,8 @@ const SCREENS = {
         <div class="sw"><span>스토리 자동 넘김</span><button class="btn sub sm" data-act="autoText">${st.autoText ? '켜짐' : '꺼짐'}</button></div>
         <div class="sw"><span>빠른 파견 (시험용)</span><button class="btn sub sm" data-act="fast">${st.fastDispatch ? '켜짐' : '꺼짐'}</button></div>
       </div>
-      <div class="card"><b>세이브</b><p class="muted">진행 상황은 이 브라우저에 저장돼요. 다른 기기로 옮기려면 내보내기를 써요.</p>
-        <div class="row"><button class="btn sub sm grow" data-act="exp">내보내기</button><button class="btn sub sm grow" data-act="imp">불러오기</button><button class="btn warn sm" data-act="reset">초기화</button></div>
+      <div class="card"><b>세이브</b><p class="muted">진행 상황은 이 브라우저에만 저장돼요. 다른 브라우저나 앱 안에서 열면 세이브가 따로라서, 옮기려면 내보내기를 써요.</p>
+        <div class="row"><button class="btn sub sm grow" data-act="exp">내보내기</button><button class="btn sub sm grow" data-act="imp">불러오기</button><button class="btn sub sm grow" data-act="restore">복구</button><button class="btn warn sm" data-act="reset">초기화</button></div>
         <input type="file" id="sf" accept=".json,.txt" hidden></div>
       <p class="muted" style="text-align:center">${esc(G.meta.title || '')} · Usual Saviors Web</p></div>`;
     bind({
@@ -526,6 +526,19 @@ const SCREENS = {
         const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `usual-saviors-save-${new Date().toISOString().slice(0, 10)}.json`; a.click();
       },
       imp() { const f = $('#sf'); f.onchange = async () => { try { importSave(await f.files[0].text()); toast('불러왔어요'); go('lobby'); } catch (e) { toast('불러오지 못했어요'); } }; f.click(); },
+      async restore() {
+        const list = backups();
+        if (!list.length) return modal('<h3>저장본 복구</h3><p class="muted">이 브라우저에 남아 있는 다른 저장본이 없어요.</p>');
+        const WHY = { bak: '직전 저장', daily: '그날 처음 접속', move: '주소 이사 직전', import: '불러오기 직전', reset: '초기화 직전', restore: '복구 직전' };
+        const when = t => t ? new Date(t).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '알 수 없음';
+        const sum = j => `${j.name || T('player')} · ${T('crew')} ${Object.keys(j.owned || {}).length}명 · 스테이지 ${Object.keys(j.cleared || {}).length}개 클리어`;
+        const now = `<p class="muted">지금: ${when(S.savedAt)} 저장 · ${esc(sum(S))}</p>`;
+        const i = await modal(`<h3 class="pick">저장본 복구</h3>${now}<p class="muted">되돌릴 저장본을 골라 주세요. 지금 진행 상황도 복구 목록에 남겨 둬요.</p>`,
+          [...list.slice(0, 7).map((b, k) => ({ label: `${when(b.j.savedAt || b.at)} · ${WHY[b.why] || ''} — ${sum(b.j)}`, cls: 'sub', value: k })), { label: '닫기', value: -1 }]);
+        if (!(i >= 0)) return;
+        if (!await confirmBox(`<h3>이 저장본으로 되돌릴까요?</h3><p class="muted">${when(list[i].j.savedAt || list[i].at)} 저장 · ${esc(sum(list[i].j))}</p>`, '되돌리기')) return;
+        try { restoreBackup(list[i].t); toast('저장본으로 되돌렸어요'); location.reload(); } catch (e) { toast('되돌리지 못했어요'); }
+      },
       async reset() { if (await confirmBox('<h3>처음부터 시작할까요?</h3><p class="muted">모든 진행 상황이 지워져요.</p>', '초기화')) { resetSave(); location.reload(); } },
     });
   },

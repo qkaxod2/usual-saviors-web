@@ -37,10 +37,18 @@ export async function migrate() {
     let txt;
     try { txt = await unpack(data); JSON.parse(txt); } catch (e) { toast('이전 주소의 세이브를 읽지 못했어요'); return false; }
     const old = JSON.parse(txt);
-    if ((S.rev || 0) > 0 && !await confirmBox(`<h3>이전 주소의 진행 상황을 가져올까요?</h3>
-      <p class="muted">이 주소에도 진행 상황이 있어요. 가져오면 이 주소의 진행 상황은 덮어써져요.<br>
-      이전 주소: ${when(old.savedAt)} 저장 · 이 주소: ${when(S.savedAt)} 저장</p>`, '가져오기', '이 주소 유지')) return false;
-    try { importSave(txt); toast('이전 주소의 진행 상황을 가져왔어요'); } catch (e) { toast('이전 주소의 세이브를 읽지 못했어요'); }
+    if ((S.rev || 0) > 0) {
+      // 이미 옮긴 뒤에 예전 주소를 다시 열어 옮기면, 더 예전 진행 상황이 들어와요. 그때는 '이 주소 유지'를 기본으로 해요
+      const older = (old.savedAt || 0) < (S.savedAt || 0);
+      const info = `<p class="muted">이 주소에도 진행 상황이 있어요. 가져오면 이 주소의 진행 상황은 덮어써져요.<br>
+        이전 주소: ${when(old.savedAt)} 저장 · 이 주소: ${when(S.savedAt)} 저장</p>`;
+      const ok = older
+        ? await modal(`<h3>이 주소의 진행 상황이 더 최근이에요</h3>${info}<p class="muted">덮어써도 설정 → 세이브 → 복구에서 되돌릴 수 있어요.</p>`,
+          [{ label: '그래도 가져오기', cls: 'sub', value: true }, { label: '이 주소 유지', value: false }])
+        : await confirmBox(`<h3>이전 주소의 진행 상황을 가져올까요?</h3>${info}`, '가져오기', '이 주소 유지');
+      if (!ok) return false;
+    }
+    try { importSave(txt, 'move'); toast('이전 주소의 진행 상황을 가져왔어요'); } catch (e) { toast('이전 주소의 세이브를 읽지 못했어요'); }
     return false;
   }
   // 예전 주소: 새 주소가 열려 있을 때만 이사를 안내해요

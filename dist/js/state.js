@@ -2,7 +2,7 @@
 import { G, charById, T } from './data.js';
 import { today, toast } from './util.js';
 
-const KEY = 'usual-saviors-save-v1', BAK = KEY + ':bak', BROKEN = KEY + ':broken';
+const KEY = 'usual-saviors-save-v1', BAK = KEY + ':bak', BROKEN = KEY + ':broken', SNAP = KEY + ':snap', SNAP_MAX = 6;
 export let S = null;
 // 세이브마다 번호(rev)를 붙여요. 이 창이 마지막으로 읽거나 쓴 번호보다 저장소 번호가 크면
 // 다른 창(탭)이 더 새로 저장한 거라, 덮어쓰지 않고 그쪽을 불러와요.
@@ -52,11 +52,34 @@ function readSlot(k) {
   if (!t) return null;
   try { const j = JSON.parse(t); return j && j.v === 1 ? { j, t } : false; } catch (e) { return false; }
 }
+// ---- 따로 남겨 두는 저장본 ----
+// 직전 저장본(BAK)은 저장할 때마다 바뀌어서, 하루 한 번 그리고 세이브를 덮어쓰기 직전에 따로 남겨 둬요 (최근 6개)
+const played = j => !!j && ((j.rev || 0) > 0 || j.seenOpening || j.name || Object.keys(j.owned || {}).length > 0);
+function snaps() { try { const a = JSON.parse(localStorage.getItem(SNAP) || '[]'); return Array.isArray(a) ? a : []; } catch (e) { return []; } }
+function snapshot(t, why) {
+  let j = null; try { j = JSON.parse(t); } catch (e) { }
+  if (!played(j)) return;
+  const list = [{ at: Date.now(), day: today(), why, t }, ...snaps().filter(s => s.t !== t)];
+  // 공간이 모자라면 오래된 것부터 빼고 다시 시도해요
+  for (let n = SNAP_MAX; n >= 1; n--) try { localStorage.setItem(SNAP, JSON.stringify(list.slice(0, n))); return; } catch (e) { }
+}
+// 덮어쓰기 전에 지금 세이브를 남겨요
+function keepCurrent(why) { const cur = readSlot(KEY); if (cur) snapshot(cur.t, why); }
+// 되돌릴 수 있는 저장본 목록 (새것부터)
+export function backups() {
+  const out = [];
+  const bak = readSlot(BAK); if (bak) out.push({ why: 'bak', j: bak.j, t: bak.t });
+  for (const s of snaps()) { try { const j = JSON.parse(s.t); if (j?.v === 1) out.push({ why: s.why, at: s.at, j, t: s.t }); } catch (e) { } }
+  const seen = new Set();
+  return out.filter(b => b.t !== lastJson && !seen.has(b.t) && seen.add(b.t)).sort((a, b) => (b.j.savedAt || b.at || 0) - (a.j.savedAt || a.at || 0));
+}
+export const restoreBackup = t => importSave(t, 'restore');
+
 function adopt(slot) { S = fromJson(slot.j); rev = S.rev || 0; lastJson = slot.t; daily(); }
 
 export function load() {
   const main = readSlot(KEY);
-  if (main) adopt(main);
+  if (main) { adopt(main); if (!snaps().some(s => s.day === today())) snapshot(main.t, 'daily'); }
   else {
     // 본 세이브가 깨졌으면 지우지 않고 따로 남겨 두고, 직전 저장본으로 시작해요
     if (main === false) try { localStorage.setItem(BROKEN, localStorage.getItem(KEY)); } catch (e) { }
@@ -87,7 +110,11 @@ export function save(force) {
   catch (e) {
     // 공간이 모자라면 직전 저장본을 비우고 한 번 더 시도해요
     try { localStorage.removeItem(BAK); localStorage.setItem(KEY, out); }
-    catch (e2) { S.rev = rev; toast('저장 공간이 부족해서 저장하지 못했어요'); return; }
+    catch (e2) {
+      // 그래도 모자라면 따로 남긴 저장본을 가장 최근 것 하나만 두고 한 번 더 시도해요
+      try { localStorage.setItem(SNAP, JSON.stringify(snaps().slice(0, 1))); localStorage.setItem(KEY, out); }
+      catch (e3) { S.rev = rev; toast('저장 공간이 부족해서 저장하지 못했어요'); return; }
+    }
   }
   rev = S.rev; lastJson = out;
 }
@@ -101,9 +128,12 @@ if (typeof addEventListener === 'function') addEventListener('storage', e => {
   if (j && j.v === 1 && r > rev) { adopt({ j, t: e.newValue }); onSync(); }
   else if (r < rev) save(true);
 });
-export function resetSave() { S = newSave(); save(true); }
+export function resetSave() { keepCurrent('reset'); S = newSave(); save(true); }
 export function exportSave() { return JSON.stringify(S); }
-export function importSave(txt) { const j = JSON.parse(txt); if (j.v !== 1) throw new Error('세이브 형식이 달라요'); S = fromJson(j); daily(); save(true); }
+export function importSave(txt, why = 'import') {
+  const j = JSON.parse(txt); if (j.v !== 1) throw new Error('세이브 형식이 달라요');
+  keepCurrent(why); S = fromJson(j); daily(); save(true);
+}
 
 // ---- 날짜 리셋 ----
 export function daily() {
