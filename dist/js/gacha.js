@@ -1,6 +1,6 @@
 // 영입(가챠)
 import { $, esc, sfx, bgm, sleep, toast, confirmBox, modal } from './util.js';
-import { G, T, charById, standing, upper, img, rarName, roleName } from './data.js';
+import { G, T, charById, standing, upper, small, img, rarName, roleName } from './data.js';
 import { S, save, addChar, count, give } from './state.js';
 
 export const COST1 = 160, COST10 = 1600;
@@ -88,7 +88,7 @@ export async function pullShow(res) {
     sfx(r.c.rarity === 3 ? 'ssr' : 'card');
     await new Promise(ok => { $('#rv', ov).onclick = e => { if (e.target.id === 'rvSkip') skip = true; ok(); }; });
   }
-  ov.innerHTML = `<div class="reveal" style="justify-content:center"><div class="results">${res.map(r => `<div class="cc fr${r.c.rarity}"><img src="${upper(r.c) || standing(r.c) || ''}" alt="">
+  ov.innerHTML = `<div class="reveal" style="justify-content:center"><div class="results">${res.map(r => `<div class="cc fr${r.c.rarity}"><img src="${small(r.c) || ''}" alt="">
       ${r.kind === 'new' ? '<span class="new">NEW</span>' : ''}<span class="cr r${r.c.rarity}" style="${r.kind === 'new' ? 'top:18px' : ''}">${rarName(r.c.rarity)}</span><span class="cn">${esc(r.c.name)}</span></div>`).join('')}</div>
     <button class="btn" id="rvOk" style="position:relative;margin-top:10px">확인</button></div>`;
   await new Promise(ok => $('#rvOk', ov).onclick = ok);

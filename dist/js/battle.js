@@ -4,7 +4,7 @@
 // - 필살기: 캐릭터마다 게이지가 따로 차요. 다 차면 카드를 눌러 적 차례 중간에도 끼어들고, 컷인이 나와요
 // - 흐트러짐: 게이지를 다 깎으면 타임라인에서 뒤로 밀리고, 모으던 힘이 흩어지고, 받는 피해가 늘어요
 import { $, esc, sfx, bgm, sleep, rand, pick, confirmBox } from './util.js';
-import { G, img, libImg, upper, standing, elemMult, bgCss, roleName } from './data.js';
+import { G, img, libImg, upper, small, standing, elemMult, bgCss, roleName } from './data.js';
 import { S, stats, save } from './state.js';
 
 const n0 = n => Math.round(n).toLocaleString('ko-KR');
@@ -197,7 +197,7 @@ export function runBattle(opt) {
       else r.textContent = turns ? `${turns}번째 차례` : '';
       const fc = forecast();
       const q = ultQ.filter(a => a.hp > 0);
-      const face = u => u.side === 'a' ? (upper(u.c) || standing(u.c)) : libImg('enemy', u.name);
+      const face = u => u.side === 'a' ? small(u.c) : libImg('enemy', u.name);
       const chipHtml = (u, cls, tag) => { const f = face(u); return `<span class="oc ${u.side} ${cls}">${f ? `<img src="${f}" alt="">` : `<i>${u.side === 'a' ? esc(u.name[0]) : foeIcon(u.name)}</i>`}<em>${esc(u.label)}</em>${tag || ''}</span>`; };
       $('#btOrder', ov).innerHTML = `<span class="lb">타임라인</span>` +
         q.map(a => chipHtml(a, 'ultq', '<b class="ut">필살</b>')).join('') +
@@ -241,7 +241,7 @@ export function runBattle(opt) {
         if (a.buf > 0 && a.bufT) tags.push(chip(`공격↑ ${a.bufT}`, 'good'));
         const inc = a.hp > 0 ? incoming(a) : 0;
         const danger = inc >= a.hp + a.shield ? 'deadly' : inc >= (a.hp + a.shield) * 0.35 ? 'warn' : '';
-        const img = upper(a.c) || standing(a.c);
+        const img = small(a.c);
         const full = a.hp > 0 && a.en >= ULT_MAX, q = ultQ.includes(a);
         return `<button class="ally ${a === acting ? 'act' : ''} ${a.hp <= 0 ? 'dead' : ''} ${full ? 'ult' : ''} ${q ? 'ultq' : ''}" data-a="${i}">
         ${img ? `<img src="${img}" alt="">` : `<div class="ph" style="height:100%">${esc(a.name)}</div>`}
