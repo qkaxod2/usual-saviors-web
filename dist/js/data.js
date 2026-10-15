@@ -3,10 +3,11 @@ import { audio } from './util.js';
 
 export let G = null;             // game 데이터 (meta, world, chars, chapters, lib, threads, opening, banners, dispatches, prog)
 const IMG = {};                  // 이미지 id → url
+const TH = {};                   // 이미지 id → 작은 썸네일 url (목록·아바타용)
 
-function setup(game, imgUrls, audioUrls) {
+function setup(game, imgUrls, audioUrls, thumbUrls) {
   G = game;
-  Object.assign(IMG, imgUrls);
+  Object.assign(IMG, imgUrls); Object.assign(TH, thumbUrls);
   // 라이브러리 오디오(id)를 이름으로 매핑
   for (const l of G.lib || []) if (audioUrls[l.id]) audio.files[l.name] = audioUrls[l.id];
   G.meta = G.meta || {}; G.meta.terms = G.meta.terms || {};
@@ -20,10 +21,11 @@ export async function loadGame() {
     if (!r.ok) return false;
     const j = await r.json();
     const pre = p => 'data/' + p;
-    const im = {}, au = {};
+    const im = {}, au = {}, th = {};
     for (const [k, v] of Object.entries(j.assets?.img || {})) im[k] = pre(v);
     for (const [k, v] of Object.entries(j.assets?.audio || {})) au[k] = pre(v);
-    setup(j.game, im, au);
+    for (const [k, v] of Object.entries(j.assets?.thumb || {})) th[k] = pre(v);
+    setup(j.game, im, au, th);
     return true;
   } catch (e) { console.warn(e); return false; }
 }
@@ -37,6 +39,8 @@ export const libByName = (kind, name) => (G.lib || []).find(l => (!kind || l.kin
 export const libImg = (kind, name) => { const l = libByName(kind, name); return l ? img(l.id) : null; };
 export const standing = c => img(c.id);
 export const upper = c => img(c.upper?.id) || img(c.id);
+// 카드·아바타처럼 작게 보이는 곳은 원본 대신 썸네일을 써요 (큰 원본을 스크롤마다 줄이면 버벅여요)
+export const small = c => { const id = img(c.upper?.id) ? c.upper.id : c.id; return TH[id] || img(id); };
 // 속성 세 갈래: 신앙 → 망각 → 해석 → 신앙 (앞이 뒤에 강해요)
 export const elems = () => (G.meta.elems && G.meta.elems.length ? G.meta.elems : [{ n: '신앙' }, { n: '망각' }, { n: '해석' }]).map(e => e.n);
 export const roleName = r => (G.meta.roles && G.meta.roles[r]) || r;

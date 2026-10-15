@@ -1,6 +1,6 @@
 // 화면들
 import { $, $$, esc, sfx, bgm, toast, modal, confirmBox, fmt, dur, sleep, setMuted, audio, pick } from './util.js';
-import { G, T, img, charById, charByName, standing, upper, libImg, bgCss, elems, roleName, rarName, fill, playerName } from './data.js';
+import { G, T, img, charById, charByName, standing, upper, small, libImg, bgCss, elems, roleName, rarName, fill, playerName } from './data.js';
 import {
   S, save, give, rewardText, count, stats, power, capLv, lvCost, limitCost, wCost, canPay, pay, addAff, filesOpen,
   owned, squadChars, teamPower, allStages, stageOpen, threadOpen, deliverThreads, badges, MISSIONS, PASS, PASS_STEP,
@@ -57,7 +57,7 @@ function bind(handlers) {
   };
 }
 const ph = (c, cls = '') => `<div class="ph ${cls}" style="width:100%;height:100%">${esc(c?.name?.[0] || '?')}</div>`;
-const thumb = c => upper(c) ? `<img src="${upper(c)}" alt="${esc(c.name)}" loading="lazy">` : ph(c);
+const thumb = c => small(c) ? `<img src="${small(c)}" alt="${esc(c.name)}" loading="lazy">` : ph(c);
 const elTag = e => `<span class="el el-${esc(e)}" title="${esc(e)}">${esc(String(e || '')[0] || '')}</span>`;
 const matLine = () => `<div class="res" style="flex-wrap:wrap;margin:4px 0"><span>${ic('exp')} ${T('expMat')} <b>${S.mat.exp}</b></span><span>${ic('wmat')} ${T('wMat')} <b>${S.mat.wmat}</b></span><span>${ic('core')} ${T('core')} <b>${S.mat.core}</b></span></div>`;
 
@@ -369,14 +369,14 @@ const SCREENS = {
     const ts = (G.threads || []).filter(threadOpen);
     scr().innerHTML = header(T('talk')) + `<div class="body">${ts.length ? ts.map(t => {
       const c = charById(t.charId); const d = S.threads[t.id]?.done;
-      return `<button class="thread" data-go="thread:${t.id}"><div class="av">${c && upper(c) ? `<img src="${upper(c)}">` : ''}</div><div class="grow"><b style="font-size:14px">${esc(c?.name || '?')}</b><div class="muted">${esc(t.title)}</div></div>${d ? '<span class="muted">읽음</span>' : '<span class="dot" style="position:static"></span>'}</button>`;
+      return `<button class="thread" data-go="thread:${t.id}"><div class="av">${c && small(c) ? `<img src="${small(c)}">` : ''}</div><div class="grow"><b style="font-size:14px">${esc(c?.name || '?')}</b><div class="muted">${esc(t.title)}</div></div>${d ? '<span class="muted">읽음</span>' : '<span class="dot" style="position:static"></span>'}</button>`;
     }).join('') : '<p class="muted">아직 온 메시지가 없어요. 작전을 진행하면 사원들이 말을 걸어와요.</p>'}</div>`;
     bind();
   },
   thread(id) {
     const t = (G.threads || []).find(x => x.id === id); if (!t) return go('talk');
     const c = charById(t.charId);
-    scr().innerHTML = `<div class="top"><button class="back" data-go="talk">‹</button><div class="av" style="width:34px;height:34px;flex-basis:34px">${c && upper(c) ? `<img src="${upper(c)}">` : ''}</div><h1>${esc(c?.name || '')}<div class="muted" style="font-size:11px;font-weight:400">${esc(t.title)}</div></h1></div>
+    scr().innerHTML = `<div class="top"><button class="back" data-go="talk">‹</button><div class="av" style="width:34px;height:34px;flex-basis:34px">${c && small(c) ? `<img src="${small(c)}">` : ''}</div><h1>${esc(c?.name || '')}<div class="muted" style="font-size:11px;font-weight:400">${esc(t.title)}</div></h1></div>
       <div class="chat" id="chat"></div><div class="chat-ch" id="chch"></div>`;
     bind();
     playThread(t, c);
@@ -392,7 +392,7 @@ const SCREENS = {
       return `<div class="li" style="flex-direction:column;align-items:stretch"><div class="row"><div class="grow"><div class="t">${esc(d.name)}</div><div class="d">${esc(d.desc || '')}</div></div></div>
         <div class="row" style="margin-top:6px"><span class="muted grow">⏱ ${d.hours}${fast ? '분' : '시간'} · ${d.need}명 · <span class="rw">${esc(rewardText(d.reward || {}))}</span></span>
         ${run ? (left <= 0 ? `<button class="btn sm" data-act="claim" data-v="${d.id}">보상 받기</button>` : `<span class="tag" data-end="${run.end}">${esc(dur(left))}</span>`) : `<button class="btn sub sm" data-act="send" data-v="${d.id}">보내기</button>`}</div>
-        ${run ? `<div class="row" style="margin-top:6px;gap:4px">${run.chars.map(id => { const c = charById(id); return c ? `<div class="av" style="width:30px;height:30px;flex-basis:30px">${upper(c) ? `<img src="${upper(c)}">` : ''}</div>` : ''; }).join('')}</div>` : ''}</div>`;
+        ${run ? `<div class="row" style="margin-top:6px;gap:4px">${run.chars.map(id => { const c = charById(id); return c ? `<div class="av" style="width:30px;height:30px;flex-basis:30px">${small(c) ? `<img src="${small(c)}">` : ''}</div>` : ''; }).join('')}</div>` : ''}</div>`;
     }).join('')}</div>`;
     bind({
       async send(id) {
@@ -434,7 +434,7 @@ const SCREENS = {
     const sh = G.meta.shop || { name: '상점' }, clerk = sh.charId && charById(sh.charId);
     const items = shopItems();
     scr().innerHTML = header(sh.name || '상점') + `<div class="body">
-      <div class="card row">${clerk && upper(clerk) ? `<div class="av" style="width:56px;height:56px;flex-basis:56px"><img src="${upper(clerk)}"></div>` : '<div style="font-size:36px">🧑‍💼</div>'}<p class="grow" style="margin:0;font-size:14px" id="clerk">${esc(fill(pick(sh.hello || ['어서 오세요!']), S))}</p></div>
+      <div class="card row">${clerk && small(clerk) ? `<div class="av" style="width:56px;height:56px;flex-basis:56px"><img src="${small(clerk)}"></div>` : '<div style="font-size:36px">🧑‍💼</div>'}<p class="grow" style="margin:0;font-size:14px" id="clerk">${esc(fill(pick(sh.hello || ['어서 오세요!']), S))}</p></div>
       ${matLine()}
       ${items.map(it => { const left = it.lim - (S.shop.buy[it.id] || 0); return `<div class="li"><div class="grow"><div class="t">${esc(it.name)}</div><div class="d">오늘 ${left}/${it.lim} · ${esc(rewardText(it.cost))}</div></div><button class="btn sm" data-act="buy" data-v="${it.id}" ${left <= 0 ? 'disabled' : ''}>구매</button></div>`; }).join('')}
       <div style="text-align:right;margin-top:18px"><button class="vault" data-act="vault">🗝 관리관 전용 비상금고</button></div></div>`;
