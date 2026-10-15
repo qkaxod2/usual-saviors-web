@@ -1,8 +1,10 @@
 [
+ "sfx_break.mp3",
  "sfx_btn.mp3",
  "sfx_card.mp3",
  "sfx_fall.mp3",
  "sfx_flash.mp3",
+ "sfx_heal.mp3",
  "sfx_hit.mp3",
  "sfx_lose.mp3",
  "sfx_noti.mp3",
@@ -10,6 +12,8 @@
  "sfx_seal.mp3",
  "sfx_skill.mp3",
  "sfx_ssr.mp3",
+ "sfx_touch.mp3",
+ "sfx_ult.mp3",
  "sfx_up.mp3",
  "sfx_win.mp3"
 ]
