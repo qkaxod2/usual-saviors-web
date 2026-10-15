@@ -1,5 +1,5 @@
 // 게임 데이터 로딩: data/game.json
-import { audio } from './util.js';
+import { audio, useAudioFiles } from './util.js';
 
 export let G = null;             // game 데이터 (meta, world, chars, chapters, lib, threads, opening, banners, dispatches, prog)
 const IMG = {};                  // 이미지 id → url
@@ -26,6 +26,8 @@ export async function loadGame() {
     for (const [k, v] of Object.entries(j.assets?.audio || {})) au[k] = pre(v);
     for (const [k, v] of Object.entries(j.assets?.thumb || {})) th[k] = pre(v);
     setup(j.game, im, au, th);
+    // data/audio/에 실제로 있는 파일 목록 (배포할 때 새로 만들어져요). 없으면 game.json 연결만 써요
+    try { const f = await fetch('data/audio/files.json', { cache: 'no-cache' }); if (f.ok) useAudioFiles(await f.json()); } catch (e) { }
     return true;
   } catch (e) { console.warn(e); return false; }
 }

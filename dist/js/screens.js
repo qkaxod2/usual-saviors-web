@@ -1,5 +1,5 @@
 // 화면들
-import { $, $$, esc, sfx, bgm, toast, modal, confirmBox, fmt, dur, sleep, setMuted, audio, pick } from './util.js';
+import { $, $$, esc, sfx, bgm, toast, modal, confirmBox, fmt, dur, sleep, setMuted, setVolume, audio, pick } from './util.js';
 import { G, T, img, charById, charByName, standing, upper, small, libImg, bgCss, elems, roleName, rarName, fill, playerName } from './data.js';
 import {
   S, save, give, rewardText, count, stats, power, capLv, lvCost, limitCost, wCost, canPay, pay, addAff, filesOpen,
@@ -53,7 +53,7 @@ function bind(handlers) {
     const g = e.target.closest('[data-go]');
     if (g) { sfx('btn'); const [n, a] = g.dataset.go.split(':'); go(n, a); return; }
     const a = e.target.closest('[data-act]');
-    if (a && handlers && handlers[a.dataset.act]) { if (a.dataset.v !== 'chest') sfx('btn'); handlers[a.dataset.act](a.dataset.v, a, e); }
+    if (a && handlers && handlers[a.dataset.act]) { if (a.dataset.act !== 'touch') sfx('btn'); handlers[a.dataset.act](a.dataset.v, a, e); }
   };
 }
 const ph = (c, cls = '') => `<div class="ph ${cls}" style="width:100%;height:100%">${esc(c?.name?.[0] || '?')}</div>`;
@@ -146,6 +146,7 @@ const SCREENS = {
           const x = Math.floor((event.clientX-r.left)/r.width*alpha.width), y = Math.floor((event.clientY-r.top)/r.height*alpha.height);
           if (x < 0 || y < 0 || x >= alpha.width || y >= alpha.height || alpha.data[(y*alpha.width+x)*4+3] < 32) return;
         }
+        sfx('touch');
         const o = S.owned[c.id];
         if (part === 'chest') {
           // 특수 터치: 누를 때마다 대사가 순서대로 나오고 1→2→3단계로 넘어가요 (30초 동안 안 누르면 처음부터). 연출은 놀라는 흔들림만.
@@ -517,6 +518,8 @@ const SCREENS = {
       <div class="card"><b>${esc(T('player'))} 이름</b><div class="row" style="margin-top:8px"><input type="text" id="nm" value="${esc(S.name)}" placeholder="${esc(T('player'))}" maxlength="12"><button class="btn sm" data-act="name">저장</button></div></div>
       <div class="card">
         <div class="sw"><span>소리</span><button class="btn sub sm" data-act="mute">${st.muted ? '꺼짐' : '켜짐'}</button></div>
+        <div class="sw"><span>배경음</span><span class="vol"><input type="range" min="0" max="100" step="5" id="volBgm" value="${Math.round((st.bgm ?? .5) * 100)}"><b id="volBgmN">${Math.round((st.bgm ?? .5) * 100)}</b></span></div>
+        <div class="sw"><span>효과음</span><span class="vol"><input type="range" min="0" max="100" step="5" id="volSfx" value="${Math.round((st.sfx ?? .6) * 100)}"><b id="volSfxN">${Math.round((st.sfx ?? .6) * 100)}</b></span></div>
         <div class="sw"><span>글자 속도</span><button class="btn sub sm" data-act="text">${st.text >= 50 ? '빠름' : st.text >= 28 ? '보통' : '느림'}</button></div>
         <div class="sw"><span>스토리 자동 넘김</span><button class="btn sub sm" data-act="autoText">${st.autoText ? '켜짐' : '꺼짐'}</button></div>
         <div class="sw"><span>빠른 파견 (시험용)</span><button class="btn sub sm" data-act="fast">${st.fastDispatch ? '켜짐' : '꺼짐'}</button></div>
@@ -525,6 +528,12 @@ const SCREENS = {
         <div class="row"><button class="btn sub sm grow" data-act="exp">내보내기</button><button class="btn sub sm grow" data-act="imp">불러오기</button><button class="btn warn sm" data-act="reset">초기화</button></div>
         <input type="file" id="sf" accept=".json,.txt" hidden></div>
       <p class="muted" style="text-align:center">${esc(G.meta.title || '')} · Usual Saviors Web</p></div>`;
+    // 볼륨: 끌면 바로 바뀌고, 손을 떼면 저장해요 (효과음은 손을 뗄 때 한 번 들려줘요)
+    for (const [id, k] of [['volBgm', 'bgm'], ['volSfx', 'sfx']]) {
+      const r = $('#' + id);
+      r.oninput = () => { const v = +r.value / 100; st[k] = v; setVolume(k, v); $('#' + id + 'N').textContent = r.value; };
+      r.onchange = () => { save(); if (k === 'sfx') sfx('ok'); };
+    }
     bind({
       name() { S.name = $('#nm').value.trim(); save(); toast('저장했어요'); },
       mute() { st.muted = !st.muted; setMuted(st.muted); save(); refresh(); },

@@ -280,7 +280,7 @@ export function runBattle(opt) {
       if (e.tough > 0) return false;
       e.broken = true; e.charged = false; push(e, BREAK_DELAY);
       if (e.intent?.kind === 'smash') planIntent(e);
-      sfx('seal');
+      sfx('break');
       const ai = AI[e.ai];
       popup(foeEl(e), `<small>${ai.breakTaken ? '빈자리 노출!' : '흐트러짐!'}</small>💫`, 'brk');
       if (!quiet) log(`${nm(e)} <span class="hl">흐트러짐!</span> 타임라인에서 밀리고 받는 피해 ×${ai.breakTaken || BREAK_TAKEN}`);
@@ -341,7 +341,7 @@ export function runBattle(opt) {
           const others = alive(A).filter(x => x !== a);
           const x = (others.length ? others : [a]).sort((p, q) => p.hp / p.mhp - q.hp / q.mhp)[0];
           const h = Math.min(x.mhp - x.hp, Math.round(x.mhp * 0.12 + a.atk * 0.8));
-          x.hp += h; if (x !== a) push(x, -0.3);
+          x.hp += h; if (x !== a) push(x, -0.3); sfx('heal');
           drawAll(); popup(allyEl(x), `+${n0(h)}<small>행동 당김</small>`, 'heal');
           log(`${nm(a)}의 「${esc(a.rsk.name)}」 → ${nm(x)} <span class="hl">체력 ${n0(h)} 회복</span>${x !== a ? ' <span class="ex">(행동 30% 당김)</span>' : ''}`);
         }
@@ -364,7 +364,7 @@ export function runBattle(opt) {
       const art = cutArt(a.c), cut = { ...CUT0, ...(a.c.cut || {}) };
       const pic = (fw, cx, cy) => art ? `<img src="${art}" alt="" style="${cutPos(cut, fw, cx, cy)}">` : '';
       const who = `<span class="el el-${esc(a.elem)}">${esc(String(a.elem || '')[0] || '')}</span>${esc(a.name)}`;
-      sfx('skill');
+      sfx('ult');
       // 5배속: 멈추지 않고 캐릭터 카드 위에 눈 띠만 잠깐 띄워요
       if (fast()) {
         const bt = $('.battle', ov), card = allyEl(a);
@@ -415,11 +415,12 @@ export function runBattle(opt) {
         drawFoes();
         log(`${nm(a)}의 「${esc(sk.name)}」 → 적 전체<br>${parts.join(' · ')}<br><span class="hl">출혈</span> (${bt}턴: 차례마다 ${n0(bl)} 피해)`);
       } else if (k === 'heal') {
-        const h = Math.round(a.atk * p * 1.1);
+        sfx('heal'); const h = Math.round(a.atk * p * 1.1);
         for (const x of alive(A)) { const got = Math.min(x.mhp - x.hp, h); x.hp += got; drawAllies(); popup(allyEl(x), '+' + n0(got), 'heal'); }
         log(`${nm(a)}의 「${esc(sk.name)}」 → 아군 전체 <span class="hl">체력 ${n0(h)} 회복</span>`);
       } else if (k === 'mend') {
         // 불완전한 그릇의 치유: 회복량이 크지만, 쓸 때마다 자기 체력이 깎여요 (쓰러지지는 않아요)
+        sfx('heal');
         const h = Math.round(a.atk * p * 1.35), cost = Math.min(a.hp - 1, Math.round(a.mhp * (sk.selfCost || 0.12)));
         for (const x of alive(A)) { if (x === a) continue; const got = Math.min(x.mhp - x.hp, h); x.hp += got; popup(allyEl(x), '+' + n0(got), 'heal'); }
         a.hp -= cost; drawAllies(); if (cost > 0) popup(allyEl(a), `-${n0(cost)}<small>반동</small>`, 'toa');

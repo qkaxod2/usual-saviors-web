@@ -23,6 +23,15 @@
 캐릭터 · 스토리 · 적 · 배너 같은 게임 데이터는 `data/game.json` 하나에 들어 있고, 그림과 소리는 `data/img`, `data/audio`에 있어요.
 데이터를 고치면 이 파일을 직접 고쳐요. 플레이어 진행 상황은 브라우저에 따로 저장돼서 그대로 남아요.
 
+## 소리 넣기
+
+`data/audio/`에 정해진 이름으로 파일을 넣으면 그 소리가 나요 (mp3 권장, ogg·m4a·wav도 돼요). 이름 목록은 `js/util.js`의 `BGM_FILES`, `SFXNAME`에 있어요.
+
+- 배경음: `bgm_title` 타이틀 · `bgm_lobby` 로비 · `bgm_daily` 일상 · `bgm_tension` 긴장 · `bgm_battle` 전투 · `bgm_boss` 보스전 · `bgm_gacha` 계약 · `bgm_emotional` 감성
+- 효과음: `sfx_` + `btn` `ok` `noti` `touch` `up` `hit` `skill` `ult` `heal` `break` `flash` `win` `lose` `seal` `card` `ssr` `fall`
+- 파일이 없으면 배경음은 조용하고 효과음은 합성음이 나요. 배포할 때 `scripts/audio_list.py`가 `data/audio/files.json`(있는 파일 목록)을 새로 만들어요. 로컬에서 확인할 때는 `python3 scripts/audio_list.py`를 한 번 돌려요.
+- 설정 화면에서 배경음·효과음 볼륨을 따로 조절해요.
+
 ## 실행 · 배포
 
 - 로컬 확인: 이 폴더에서 `python3 -m http.server 8000` → http://localhost:8000

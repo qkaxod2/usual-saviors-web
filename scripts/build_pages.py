@@ -8,6 +8,8 @@ from pathlib import Path
 
 from PIL import Image
 
+from audio_list import write_list
+
 SRC = Path(sys.argv[1] if len(sys.argv) > 1 else 'dist')
 OUT = Path(sys.argv[2] if len(sys.argv) > 2 else '_site')
 TEXT = {'.html', '.js', '.css', '.json', '.webmanifest'}
@@ -15,6 +17,9 @@ QUALITY = 90
 
 shutil.rmtree(OUT, ignore_errors=True)
 shutil.copytree(SRC, OUT)
+
+# 소리 파일 목록을 실제 폴더 내용으로 새로 적어요 (파일만 넣으면 바로 나오게)
+print('소리 파일:', ', '.join(write_list(OUT)) or '없음')
 
 renamed = {}
 before = after = 0

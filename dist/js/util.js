@@ -44,9 +44,21 @@ export function modal(html, buttons = [{ label: '확인', value: true }]) {
 }
 export const confirmBox = (html, ok = '확인', no = '취소') => modal(html, [{ label: no, cls: 'sub', value: false }, { label: ok, value: true }]);
 
-// ---- 소리: 데이터에 오디오가 있으면 그걸 쓰고, 없으면 짧은 합성음 ----
+// ---- 소리 ----
+// data/audio/ 폴더에 아래 파일 이름으로 mp3(또는 ogg·m4a·wav)를 넣으면 그 소리가 나요.
+// 파일이 없으면 배경음은 조용하고, 효과음은 짧은 합성음으로 대신해요.
+// 배포할 때 scripts/build_pages.py가 폴더를 훑어서 data/audio/files.json(있는 파일 목록)을 새로 만들어요.
+export const BGM_FILES = { 타이틀: 'bgm_title', 로비: 'bgm_lobby', 일상: 'bgm_daily', 긴장: 'bgm_tension', 전투: 'bgm_battle', 보스전: 'bgm_boss', 계약: 'bgm_gacha', 감성: 'bgm_emotional' };
+const SFXNAME = { 버튼: 'btn', 확인: 'ok', 알림: 'noti', 타격: 'hit', 스킬: 'skill', 승리: 'win', 패배: 'lose', 강화: 'up', 카드: 'card', SSR: 'ssr', 계약진: 'seal', 섬광: 'flash', 낙하: 'fall', 필살기: 'ult', 회복: 'heal', 흐트러짐: 'break', 터치: 'touch' };
+const SFX_ALT = { ult: 'skill', heal: 'up', break: 'seal', touch: 'btn' }; // 새로 생긴 효과음은 파일이 없으면 비슷한 소리로 대신해요
 let AC = null, master = null;
 export const audio = { files: {}, bgmEl: null, bgmName: '', vol: { bgm: .5, sfx: .6 }, muted: false };
+// files.json에 적힌 파일 이름을 소리 이름에 연결해요 (game.json에 있던 연결보다 우선)
+export function useAudioFiles(list, base = 'data/audio/') {
+  const stems = {}; for (const f of list || []) stems[f.replace(/\.[^.]+$/, '')] = base + f;
+  for (const [n, st] of Object.entries(BGM_FILES)) if (stems[st]) audio.files[n] = stems[st];
+  for (const [n, k] of Object.entries(SFXNAME)) if (stems['sfx_' + k]) audio.files[n] = stems['sfx_' + k];
+}
 function ac() {
   if (!AC) { try { AC = new (window.AudioContext || window.webkitAudioContext)(); master = AC.createGain(); master.connect(AC.destination); } catch (e) { } }
   if (AC && AC.state === 'suspended') AC.resume();
@@ -59,13 +71,18 @@ const SYN = {
   up: [[600, .06], [900, .06], [1200, .12]], card: [[300, .05, 'triangle']], ssr: [[784, .1], [988, .1], [1318, .1], [1568, .4]],
   seal: [[220, .4, 'sine']], flash: [[1800, .15, 'sine']], fall: [[600, .25, 'sine']],
 };
-const SFXNAME = { 버튼: 'btn', 확인: 'ok', 알림: 'noti', 타격: 'hit', 스킬: 'skill', 승리: 'win', 패배: 'lose', 강화: 'up', 카드: 'card', SSR: 'ssr', 계약진: 'seal', 섬광: 'flash', 낙하: 'fall' };
+const sfxEl = {}; // 한 번 읽은 효과음은 들고 있다가 복사해서 틀어요
 export function sfx(name) {
   if (audio.muted || !audio.vol.sfx) return;
-  const kor = Object.keys(SFXNAME).find(k => SFXNAME[k] === name) || name;
-  const f = audio.files[kor];
-  if (f) { const a = new Audio(f); a.volume = audio.vol.sfx; a.play().catch(() => { }); return; }
-  const key = SFXNAME[name] || name, seq = SYN[key]; if (!seq) return;
+  let key = SFXNAME[name] || name;
+  const kor = n => Object.keys(SFXNAME).find(k => SFXNAME[k] === n);
+  let f = audio.files[kor(key)];
+  if (!f && SFX_ALT[key]) { key = SFX_ALT[key]; f = audio.files[kor(key)]; }
+  if (f) {
+    const a = (sfxEl[f] ||= Object.assign(new Audio(f), { preload: 'auto' })).cloneNode();
+    a.volume = audio.vol.sfx; a.play().catch(() => { }); return;
+  }
+  const seq = SYN[key]; if (!seq) return;
   const c = ac(); if (!c) return;
   let t = c.currentTime;
   for (const [fr, d, type] of seq) {
@@ -75,12 +92,36 @@ export function sfx(name) {
     o.connect(g); g.connect(master); o.start(t); o.stop(t + d + .02); t += d * .8;
   }
 }
+// 배경음: 곡이 바뀌면 앞 곡은 짧게 줄이고 새 곡은 서서히 키워요
+function fade(a, to, ms, done) {
+  const from = a.volume, t0 = performance.now();
+  clearInterval(a._fade);
+  a._fade = setInterval(() => {
+    const k = Math.min(1, (performance.now() - t0) / ms); a.volume = Math.max(0, Math.min(1, from + (to - from) * k));
+    if (k >= 1) { clearInterval(a._fade); done && done(); }
+  }, 40);
+}
+let waitTap = false;
+function startBgm(a) {
+  a.play().catch(() => {
+    // 브라우저는 화면을 한 번 누르기 전에는 소리를 막아요. 첫 터치 때 다시 틀어요
+    if (waitTap) return; waitTap = true;
+    const go = () => { waitTap = false; removeEventListener('pointerdown', go, true); removeEventListener('keydown', go, true); if (audio.bgmEl && !audio.muted) audio.bgmEl.play().catch(() => { }); };
+    addEventListener('pointerdown', go, true); addEventListener('keydown', go, true);
+  });
+}
 export function bgm(name) {
   if (name === audio.bgmName) return;
   audio.bgmName = name;
-  if (audio.bgmEl) { audio.bgmEl.pause(); audio.bgmEl = null; }
+  const old = audio.bgmEl; audio.bgmEl = null;
+  if (old) fade(old, 0, 400, () => old.pause());
   const f = name && audio.files[name];
   if (!f || audio.muted) return;
-  const a = new Audio(f); a.loop = true; a.volume = audio.vol.bgm; a.play().catch(() => { }); audio.bgmEl = a;
+  const a = new Audio(f); a.loop = true; a.volume = 0; audio.bgmEl = a;
+  startBgm(a); fade(a, audio.vol.bgm, 800);
 }
-export function setMuted(m) { audio.muted = m; if (m && audio.bgmEl) { audio.bgmEl.pause(); } else if (!m) { const n = audio.bgmName; audio.bgmName = ''; bgm(n); } }
+export function setVolume(kind, v) {
+  audio.vol[kind] = v;
+  if (kind === 'bgm' && audio.bgmEl) { clearInterval(audio.bgmEl._fade); audio.bgmEl.volume = v; }
+}
+export function setMuted(m) { audio.muted = m; if (m && audio.bgmEl) { audio.bgmEl.pause(); } else if (!m) { const n = audio.bgmName; audio.bgmName = ''; audio.bgmEl = null; bgm(n); } }
