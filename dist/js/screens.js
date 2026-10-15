@@ -3,7 +3,7 @@ import { $, $$, esc, sfx, bgm, toast, modal, confirmBox, fmt, dur, sleep, setMut
 import { G, T, img, charById, charByName, standing, upper, libImg, bgCss, elems, roleName, rarName, fill, playerName } from './data.js';
 import {
   S, save, give, rewardText, count, stats, power, capLv, lvCost, limitCost, wCost, canPay, pay, addAff, filesOpen,
-  owned, squadChars, teamPower, allStages, stageOpen, threadOpen, badges, MISSIONS, PASS, PASS_STEP,
+  owned, squadChars, teamPower, allStages, stageOpen, threadOpen, deliverThreads, badges, MISSIONS, PASS, PASS_STEP,
   factions, factionMembers, factionOwned, codexSteps, codexClaimable,
   MAX_LIMIT, MAX_WLV, MAX_AFF, MAX_DUP, resetSave, exportSave, importSave, addChar,
 } from './state.js';
@@ -318,7 +318,7 @@ const SCREENS = {
             [{ label: '취소', cls: 'sub', value: 0 }, { label: first ? '읽기' : '다시 보기', value: 1 }]);
           if (!r) return;
           await playStory(s.title, s.pre); if (s.post) await playStory(s.title, s.post);
-          if (first) { const rw = { gems: s.reward, gold: 3000 }; S.cleared[s.id] = Date.now(); save(); give(rw, true); await modal(`<h3>${esc(s.title)}</h3><p>${esc(rewardText(rw))}</p>${newThreads(s.id)}`); }
+          if (first) { const rw = { gems: s.reward, gold: 3000 }; S.cleared[s.id] = Date.now(); save(); give(rw, true); await modal(`<h3>${esc(s.title)}</h3><p>${esc(rewardText(rw))}</p>${newThreads()}`); }
           refresh(); return;
         }
         if (!await needSquad()) return;
@@ -338,8 +338,8 @@ const SCREENS = {
           S.cleared[s.id] = Date.now(); save();
           if (s.post) await playStory(s.title, s.post);
           const rw = firstReward(s); give(rw, true);
-          await modal(`<h3>작전 성공!</h3><p>${esc(rewardText(rw))}</p>${newThreads(s.id)}`);
-        } else { const rw = repeatReward(s); give(rw, true); await modal(`<h3>작전 성공!</h3><p>${esc(rewardText(rw))}</p>`); }
+          await modal(`<h3>작전 성공!</h3><p>${esc(rewardText(rw))}</p>${newThreads()}`);
+        } else { const rw = repeatReward(s); give(rw, true); await modal(`<h3>작전 성공!</h3><p>${esc(rewardText(rw))}</p>${newThreads()}`); }
         refresh();
       },
       async farm(v) {
@@ -355,7 +355,7 @@ const SCREENS = {
         const unlock = t === farmTop(key) && t < FARM_TIER.length - 1;
         S.farmTier = { ...(S.farmTier || {}), [key]: Math.max(farmTop(key), t + 1) };
         const rw = farmReward(key, t); give(rw, true);
-        await modal(`<h3>정리 완료!</h3><p>${esc(rewardText(rw))}</p>${unlock ? `<p class="muted">${FARM_TIER[t + 1].name}이 열렸어요!</p>` : ''}`); refresh();
+        await modal(`<h3>정리 완료!</h3><p>${esc(rewardText(rw))}</p>${unlock ? `<p class="muted">${FARM_TIER[t + 1].name}이 열렸어요!</p>` : ''}${newThreads()}`); refresh();
       },
     });
   },
@@ -598,11 +598,14 @@ function afterBattle(res) {
   for (const id of S.squad) { const u = addAff(id, 8); if (u.length) ups.push(charById(id).name); }
   save(); if (ups.length) toast(`${ups.join(', ')} 호감도 상승!`);
 }
-function newThreads(stageId) {
-  const ts = (G.threads || []).filter(t => t.trigger?.type === 'clear' && t.trigger.value === stageId && threadOpen(t));
+// 승리 보상 창에 붙는 메신저 도착 알림. 한 번에 몇 통씩만 도착해요
+function newThreads() {
+  const ts = deliverThreads(3); save();
   if (!ts.length) return '';
   sfx('noti');
-  return `<p style="margin-top:10px;color:var(--ac)">💬 ${ts.map(t => esc(charById(t.charId)?.name || '')).join(', ')}에게서 메시지가 왔어요</p>`;
+  const names = ts.map(t => esc(charById(t.charId)?.name || ''));
+  const who = names.length > 2 ? `${names.slice(0, 2).join(', ')} 외 ${names.length - 2}명` : names.join(', ');
+  return `<p style="margin-top:10px;color:var(--ac)">💬 ${who}에게서 메시지가 왔어요</p>`;
 }
 async function needSquad() {
   if (squadChars().length) return true;

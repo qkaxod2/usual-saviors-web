@@ -34,7 +34,7 @@ export function newSave() {
     gems: p.gems ?? 3600, gold: p.gold ?? 20000,
     mat: { exp: p.mat?.exp ?? 40, wmat: p.mat?.wmat ?? 20, core: p.mat?.core ?? 10 },
     owned: {}, squad: [], cleared: {}, pity: {}, pulls: 0, history: [],
-    threads: {}, disp: {}, mail: (p.mail || []).map(m => ({ ...m, got: false, read: false, at: Date.now() })),
+    threads: {}, inbox: {}, disp: {}, mail: (p.mail || []).map(m => ({ ...m, got: false, read: false, at: Date.now() })),
     daily: { date: '', cnt: {}, got: {} }, pass: { month: '', xp: 0, got: [] },
     farm: { date: '', n: {} }, farmTier: {}, codex: {}, shop: { date: '', buy: {} }, touch: { date: '', n: 0 },
     seenOpening: false, lobbyChar: '', firstTen: p.firstTen !== false,
@@ -192,13 +192,27 @@ export function teamPower() { return squadChars().reduce((a, c) => a + power(c),
 // ---- 진행 판정 ----
 export function allStages() { const out = []; for (const ch of G.chapters || []) for (const s of ch.stages || []) out.push({ ch, s }); return out; }
 export function stageOpen(id) { const all = allStages(); const i = all.findIndex(x => x.s.id === id); return i <= 0 || !!S.cleared[all[i - 1].s.id]; }
-export function threadOpen(t) {
+// 조건을 채운 메신저(threadReady) 가운데 실제로 도착한 것(inbox)만 목록에 떠요
+export function threadReady(t) {
   const tr = t.trigger || {};
   if (t.needOwn && !S.owned[t.charId]) return false;
   if (tr.type === 'clear') return !!S.cleared[tr.value];
   if (tr.type === 'own') return !!S.owned[tr.value || t.charId];
   if (tr.type === 'aff') { const o = S.owned[t.charId]; return !!o && o.aff >= (+tr.value || 0); }
   return true;
+}
+export const threadOpen = t => threadReady(t) && !!(S.threads[t.id]?.done || S.inbox?.[t.id]);
+// 승리할 때마다 조건을 채운 메신저를 조금씩 도착시켜요 (한 번에 최대 max개, 한 사람당 1개)
+// 순서: 먼저 열린 조건(스테이지 순) → 편성 중인 사원 → 데이터 순서. 같은 사원의 다음 편은 앞 편이 온 뒤에만 와요
+export function deliverThreads(max = 3) {
+  S.inbox = S.inbox || {};
+  const all = G.threads || [], got = t => !!(S.threads[t.id]?.done || S.inbox[t.id]);
+  const stages = allStages().map(x => x.s.id), rank = t => { const i = t.trigger?.type === 'clear' ? stages.indexOf(t.trigger.value) : -1; return i < 0 ? 0 : i; };
+  const pend = all.filter(t => threadReady(t) && !got(t) && all.slice(0, all.indexOf(t)).every(p => p.charId !== t.charId || got(p)));
+  pend.sort((a, b) => (rank(a) - rank(b)) || (S.squad.includes(b.charId) - S.squad.includes(a.charId)) || (all.indexOf(a) - all.indexOf(b)));
+  const out = [];
+  for (const t of pend) { if (out.length >= max) break; if (out.some(o => o.charId === t.charId)) continue; S.inbox[t.id] = Date.now(); out.push(t); }
+  return out;
 }
 // ---- 팩션 도감 ----
 // 팩션마다 소속 사원을 모을수록 보상: 첫 만남 · 절반 · 전원
