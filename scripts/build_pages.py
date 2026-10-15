@@ -42,6 +42,26 @@ if renamed:
                 f.write_text(n, encoding='utf-8')
                 print(f'경로 수정: {f.relative_to(OUT)}')
 
+# 화면에 보이는 크기보다 훨씬 큰 그림은 배포본에서만 줄여요 (원본은 레포에 그대로)
+# 아이콘은 26px, 적은 150px, 상반신은 화면 높이 540px(1080p에서 1080px) 정도로 보여요
+LIMIT = {'ic_': 128, 'en_': 512, 'up_': 1600, 'bn_': 1920}
+shrunk = [0, 0]
+for f in sorted((OUT / 'data' / 'img').glob('*.webp')):
+    side = next((v for k, v in LIMIT.items() if f.name.startswith(k)), None)
+    if not side:
+        continue
+    with Image.open(f) as im:
+        if max(im.size) <= side:
+            continue
+        k = side / max(im.size)
+        small = im.resize((round(im.width * k), round(im.height * k)), Image.LANCZOS)
+    old_size = f.stat().st_size
+    small.save(f, 'WEBP', quality=QUALITY, method=6)
+    shrunk[0] += old_size; shrunk[1] += f.stat().st_size
+    print(f'{f.relative_to(OUT)}: {old_size // 1024}KB -> {f.stat().st_size // 1024}KB')
+if shrunk[0]:
+    print(f'큰 그림 줄이기: {shrunk[0] // 1024}KB -> {shrunk[1] // 1024}KB')
+
 left = [str(p.relative_to(OUT)) for p in OUT.rglob('*') if p.is_file() and re.search(r'\.png\b', p.read_text(encoding='utf-8', errors='ignore')) and p.suffix in TEXT]
 if left:
     sys.exit(f'아직 .png를 가리키는 파일이 있어요: {left}')

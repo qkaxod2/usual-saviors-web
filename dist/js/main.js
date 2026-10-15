@@ -1,5 +1,5 @@
 import { $, esc, toast, setMuted, audio } from './util.js';
-import { loadGame, G } from './data.js';
+import { loadGame, G, warmImages } from './data.js';
 import { load, S, save, sync, setOnSync, claim, checkOwner, setOnKicked } from './state.js';
 import { go, redraw } from './screens.js';
 import { migrate } from './move.js';
@@ -20,6 +20,7 @@ async function boot() {
   if (await migrate()) return;
   audio.vol.bgm = S.settings.bgm ?? .5; audio.vol.sfx = S.settings.sfx ?? .6; setMuted(!!S.settings.muted);
   go('title');
+  setTimeout(() => warmImages(S.lobbyChar), 300);
   setOnSync(redraw);
   setInterval(() => save(), 30000);
   // 화면을 떠날 때는 저장, 돌아오면 다른 창에서 저장한 게 있는지 먼저 확인해요

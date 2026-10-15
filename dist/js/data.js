@@ -40,6 +40,14 @@ export const libImg = (kind, name) => { const l = libByName(kind, name); return 
 export const standing = c => img(c.id);
 export const upper = c => img(c.upper?.id) || img(c.id);
 // 카드·아바타처럼 작게 보이는 곳은 원본 대신 썸네일을 써요 (큰 원본을 스크롤마다 줄이면 버벅여요)
+// 타이틀 화면을 보는 동안 자주 쓰는 작은 그림(썸네일·아이콘)과 로비 캐릭터를 미리 받아 둬요
+export function warmImages(lobbyId) {
+  const c = lobbyId && charById(lobbyId);
+  const urls = [c && (img(c.pose?.id) || standing(c)), ...(G.lib || []).filter(l => l.kind === 'icon').map(l => img(l.id)), ...Object.values(TH)].filter(Boolean);
+  let i = 0;
+  const next = () => { if (i >= urls.length) return; const im = new Image(); im.decoding = 'async'; im.onload = im.onerror = next; im.src = urls[i++]; };
+  for (let n = 0; n < 4; n++) next();
+}
 export const small = c => { const id = img(c.upper?.id) ? c.upper.id : c.id; return TH[id] || img(id); };
 // 속성 세 갈래: 신앙 → 망각 → 해석 → 신앙 (앞이 뒤에 강해요)
 export const elems = () => (G.meta.elems && G.meta.elems.length ? G.meta.elems : [{ n: '신앙' }, { n: '망각' }, { n: '해석' }]).map(e => e.n);
