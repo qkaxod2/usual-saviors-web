@@ -214,7 +214,7 @@ export function runBattle(opt) {
         const u = libImg('enemy', e.name);
         const tags = [];
         if (e.hp > 0 && me && adv(me, e)) tags.push(chip('상성 우위', 'good'));
-        if (e.buf < 0 && e.bufT) tags.push(chip(`매료 ${e.bufT}`, 'good'));
+        if (e.buf < 0 && e.bufT) tags.push(chip(`${e.bufName || '매료'} ${e.bufT}`, 'good'));
         if (e.hp > 0 && e.markT) tags.push(chip(`◎ ${e.markName || '조준'} ${e.markT} · 받는 피해 +${Math.round(e.mark * 100)}%`, 'good'));
         if (e.hp > 0 && e.bleedT) tags.push(chip(`출혈 ${e.bleedT} · 차례마다 -${n0(e.bleed)}`, 'good'));
         const ai = AI[e.ai];
@@ -414,6 +414,15 @@ export function runBattle(opt) {
         }
         drawFoes();
         log(`${nm(a)}의 「${esc(sk.name)}」 → 적 전체<br>${parts.join(' · ')}<br><span class="hl">출혈</span> (${bt}턴: 차례마다 ${n0(bl)} 피해)`);
+      } else if (k === 'curse') {
+        // 적 전체를 치고 2턴 동안 공포(주는 피해↓ 받는 피해↑)를 걸어요. 심장에 부담이 와서 자기 체력이 조금 깎여요 (쓰러지지는 않아요)
+        const parts = [], down = 0.15 * p, cost = Math.min(a.hp - 1, Math.round(a.mhp * (sk.selfCost || 0.08)));
+        for (const e of alive(E)) {
+          const r = dealDmg(a, e, p * 1.15); parts.push(`${esc(e.label)} ${showHit(e, r)}`); wear(e, breakAmt(a, e, 2), true);
+          if (e.hp > 0) { e.buf = Math.min(e.buf || 0, -down); e.bufT = 2; e.bufName = '공포'; popup(foeEl(e), '공포', 'adv'); }
+        }
+        a.hp -= cost; drawAll(); if (cost > 0) popup(allyEl(a), `-${n0(cost)}<small>반동</small>`, 'toa');
+        log(`${nm(a)}의 「${esc(sk.name)}」 → 적 전체<br>${parts.join(' · ')}<br><span class="hl">공포</span> (2턴: 주는 피해↓ 받는 피해↑) · 반동으로 자신 체력 ${n0(cost)} 소모`);
       } else if (k === 'heal') {
         sfx('heal'); const h = Math.round(a.atk * p * 1.1);
         for (const x of alive(A)) { const got = Math.min(x.mhp - x.hp, h); x.hp += got; drawAllies(); popup(allyEl(x), '+' + n0(got), 'heal'); }
@@ -450,7 +459,7 @@ export function runBattle(opt) {
         drawAll(); for (const x of alive(A)) popup(allyEl(x), '공격↑', 'heal');
         log(`${nm(a)}의 「${esc(sk.name)}」 → 아군 전체 <span class="hl">공격력 ${Math.round(17 * p)}% 증가</span> (2턴) · 행동 20% 당김`);
       } else if (k === 'debuff') {
-        for (const e of alive(E)) { e.buf = -0.2 * p; e.bufT = 2; push(e, 0.15); popup(foeEl(e), '매료', 'adv'); wear(e, 1, true); }
+        for (const e of alive(E)) { e.buf = -0.2 * p; e.bufT = 2; e.bufName = '매료'; push(e, 0.15); popup(foeEl(e), '매료', 'adv'); wear(e, 1, true); }
         drawAll();
         log(`${nm(a)}의 「${esc(sk.name)}」 → 적 전체 <span class="hl">매료</span> (2턴: 주는 피해↓ 받는 피해↑, 흐트러짐 게이지 -1, 행동 밀림)`);
       } else {
@@ -571,6 +580,7 @@ export function runBattle(opt) {
       if (k === 'shield' || k === 'scale') return alive(A).some(x => !x.shield && incoming(x) > x.hp * 0.2) || (k === 'scale' && !alive(A).some(x => x.bufT));
       if (k === 'buff') return !alive(A).some(x => x.bufT);
       if (k === 'mark') return !alive(E).some(e => e.markT);
+      if (k === 'curse') return a.hp / a.mhp > 0.25;
       return true;
     }
     function waitCmd(a) {
