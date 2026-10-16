@@ -1,5 +1,5 @@
 // 진행 상황(세이브)과 성장 규칙
-import { G, charById, T } from './data.js';
+import { G, charById, T, isShun } from './data.js';
 import { today, toast } from './util.js';
 
 const KEY = 'usual-saviors-save-v1', BAK = KEY + ':bak', BROKEN = KEY + ':broken';
@@ -190,13 +190,21 @@ export function squadChars() { return S.squad.map(charById).filter(c => c && S.o
 export function teamPower() { return squadChars().reduce((a, c) => a + power(c), 0); }
 
 // ---- 진행 판정 ----
-export function allStages() { const out = []; for (const ch of G.chapters || []) for (const s of ch.stages || []) out.push({ ch, s }); return out; }
+// 루트 챕터(route: 'shun')는 관리관이 아미키리 슌일 때만 나오고, replaces에 적힌 챕터 자리를 대신해요
+function routeChapters() {
+  const shun = isShun(S), chs = G.chapters || [];
+  const gone = new Set(shun ? chs.filter(c => c.route === 'shun').flatMap(c => [].concat(c.replaces || [])) : []);
+  return chs.filter(c => (c.route ? c.route === 'shun' && shun : !gone.has(c.id)));
+}
+export function allStages() { const out = []; for (const ch of routeChapters()) for (const s of ch.stages || []) out.push({ ch, s }); return out; }
+// 루트 스테이지의 as는 원래 스토리의 어느 스테이지를 깬 것으로 칠지예요 (메신저 도착 조건용)
+export function isCleared(id) { return !!S.cleared[id] || allStages().some(x => x.s.as === id && S.cleared[x.s.id]); }
 export function stageOpen(id) { const all = allStages(); const i = all.findIndex(x => x.s.id === id); return i <= 0 || !!S.cleared[all[i - 1].s.id]; }
 // 조건을 채운 메신저(threadReady) 가운데 실제로 도착한 것(inbox)만 목록에 떠요
 export function threadReady(t) {
   const tr = t.trigger || {};
   if (t.needOwn && !S.owned[t.charId]) return false;
-  if (tr.type === 'clear') return !!S.cleared[tr.value];
+  if (tr.type === 'clear') return isCleared(tr.value);
   if (tr.type === 'own') return !!S.owned[tr.value || t.charId];
   if (tr.type === 'aff') { const o = S.owned[t.charId]; return !!o && o.aff >= (+tr.value || 0); }
   return true;
@@ -207,7 +215,7 @@ export const threadOpen = t => threadReady(t) && !!(S.threads[t.id]?.done || S.i
 export function deliverThreads(max = 3) {
   S.inbox = S.inbox || {};
   const all = G.threads || [], got = t => !!(S.threads[t.id]?.done || S.inbox[t.id]);
-  const stages = allStages().map(x => x.s.id), rank = t => { const i = t.trigger?.type === 'clear' ? stages.indexOf(t.trigger.value) : -1; return i < 0 ? 0 : i; };
+  const stages = allStages().map(x => x.s.id), rank = t => { const v = t.trigger?.value, a = allStages().find(x => x.s.as === v); const i = t.trigger?.type === 'clear' ? stages.indexOf(a ? a.s.id : v) : -1; return i < 0 ? 0 : i; };
   const pend = all.filter(t => threadReady(t) && !got(t) && all.slice(0, all.indexOf(t)).every(p => p.charId !== t.charId || got(p)));
   pend.sort((a, b) => (rank(a) - rank(b)) || (S.squad.includes(b.charId) - S.squad.includes(a.charId)) || (all.indexOf(a) - all.indexOf(b)));
   const out = [];
