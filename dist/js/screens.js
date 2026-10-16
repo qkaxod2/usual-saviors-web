@@ -1,6 +1,6 @@
 // 화면들
 import { $, $$, esc, sfx, bgm, toast, modal, confirmBox, fmt, dur, sleep, setMuted, setVolume, audio, pick } from './util.js';
-import { G, T, img, charById, charByName, standing, upper, small, libImg, bgCss, elems, roleName, rarName, fill, playerName } from './data.js';
+import { G, T, img, charById, charByName, standing, upper, small, libImg, bgCss, elems, roleName, rarName, fill, playerName, applyNameEgg } from './data.js';
 import {
   S, save, give, rewardText, count, stats, power, capLv, lvCost, limitCost, wCost, canPay, pay, addAff, filesOpen,
   owned, squadChars, teamPower, allStages, stageOpen, threadOpen, deliverThreads, badges, MISSIONS, PASS, PASS_STEP,
@@ -33,6 +33,7 @@ export function go(name, arg, keep) {
   const same = keep && name === current;
   const pos = same ? [...scr().querySelectorAll('.body, .grid, .chat')].map(el => el.scrollTop) : null;
   current = name; currentArg = arg;
+  applyNameEgg(S);
   const f = SCREENS[name]; if (!f) return;
   scr().onclick = null; scr().innerHTML = ''; scr().dataset.s = name;
   f(arg);
@@ -535,7 +536,7 @@ const SCREENS = {
       r.onchange = () => { save(); if (k === 'sfx') sfx('ok'); };
     }
     bind({
-      name() { S.name = $('#nm').value.trim(); save(); toast('저장했어요'); },
+      name() { S.name = $('#nm').value.trim(); save(); applyNameEgg(S); toast('저장했어요'); },
       mute() { st.muted = !st.muted; setMuted(st.muted); save(); refresh(); },
       text() { st.text = st.text >= 50 ? 14 : st.text >= 28 ? 52 : 28; save(); refresh(); },
       autoText() { st.autoText = !st.autoText; save(); refresh(); },
@@ -722,7 +723,7 @@ async function firstRun() {
     m.innerHTML = `<div class="mbox"><h3>${esc(T('player'))}님의 이름은?</h3><input type="text" id="nm0" maxlength="12" placeholder="${esc(T('player'))}"><div class="acts"><button class="btn sm" id="nmok">확인</button></div></div>`;
     $('#nmok').onclick = () => { const v = $('#nm0').value.trim(); m.hidden = true; m.innerHTML = ''; r(v); };
   });
-  S.name = nm; save();
+  S.name = nm; save(); applyNameEgg(S);
   if (G.opening?.prologue) await playStory('프롤로그', G.opening.prologue);
   // 메인 스토리 첫 화가 스토리 전용이면, 가입 직후 그대로 이어서 보여 줘요 (클레이와의 첫 만남)
   const p0 = allStages()[0]?.s;

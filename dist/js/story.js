@@ -1,12 +1,16 @@
 // 비주얼 노벨식 스토리 재생기
 import { $, esc, sfx, bgm, sleep, confirmBox } from './util.js';
-import { G, charByName, upper, standing, img, libImg, bgCss, fill, playerName } from './data.js';
+import { G, charByName, upper, standing, img, libImg, bgCss, fill, playerName, isShun } from './data.js';
 import { S as SAVE } from './state.js';
 
 const CMD = /^\[(배경|소품|효과음|효과|사진|음악|톡|CG|cg)\s*[:：]\s*(.+?)\]$/;
+// 줄 앞에 '슌)'을 붙이면 관리관 이름이 아미키리 슌일 때만, '일반)'을 붙이면 그 밖의 이름일 때만 나와요
 export function parseScript(t) {
-  return String(t || '').split('\n').map(l => l.trim()).filter(Boolean).map(raw => {
-    let l = raw, cond = 0, m, o;
+  const shun = isShun(SAVE);
+  return String(t || '').split('\n').map(l => l.trim()).filter(Boolean).filter(l => {
+    const m = l.match(/^(슌|일반)\)/); return !m || (m[1] === '슌') === shun;
+  }).map(raw => {
+    let l = raw.replace(/^(슌|일반)\)\s*/, ''), cond = 0, m, o;
     if ((m = l.match(/^(\d)\)\s*(.+)$/))) { cond = +m[1]; l = m[2]; }
     if (/^\[소품\s*끝\]$/.test(l)) o = { type: 'cmd', cmd: '소품끝' };
     else if (/^\[음악\s*끝\]$/.test(l)) o = { type: 'cmd', cmd: '음악끝' };

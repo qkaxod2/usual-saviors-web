@@ -60,4 +60,20 @@ export function bgCss(name) {
   return `background:radial-gradient(ellipse at 30% 20%,hsl(${h} 45% 22%),transparent 60%),radial-gradient(ellipse at 80% 90%,hsl(${(h + 60) % 360} 50% 16%),transparent 60%),linear-gradient(160deg,hsl(${h} 30% 10%),#06080d)`;
 }
 export function playerName(S) { return (S && S.name) || T('player'); }
+// 이스터 에그: 관리관 이름을 아미키리 슌으로 정하면 대사와 스토리 일부가 바뀌어요
+const SHUN_NAMES = ['아미키리슌', '슌', '網切蠢', '蠢', 'amikirishun', 'shunamikiri'];
+export function isShun(S) { return SHUN_NAMES.includes(String((S && S.name) || '').replace(/[\s·・.]/g, '').toLowerCase()); }
+// 캐릭터에 'shun' 묶음(intro·lines·affLines·lvLines·dupLines·touch)이 있으면 슌일 때 그걸 써요. 이름을 바꾸면 원래대로 돌아와요
+const SHUN_KEYS = ['intro', 'lines', 'affLines', 'lvLines', 'dupLines', 'touch'];
+export function applyNameEgg(S) {
+  const on = isShun(S);
+  for (const c of G.chars) {
+    if (!c.shun) continue;
+    if (!c._base) c._base = Object.fromEntries(SHUN_KEYS.map(k => [k, c[k]]));
+    for (const k of SHUN_KEYS) {
+      const b = c._base[k], v = c.shun[k];
+      c[k] = !on || v == null ? b : k === 'touch' ? { ...b, ...v, hitboxes: b?.hitboxes } : k === 'affLines' ? { ...b, ...v } : v;
+    }
+  }
+}
 export function fill(text, S) { return String(text || '').replace(/\{관리관\}|\{player\}/g, playerName(S)).replace(/\{([^}]+)\}/g, (m, k) => k === T('player') ? playerName(S) : m); }
